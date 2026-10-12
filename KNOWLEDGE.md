@@ -105,3 +105,11 @@ error, and the built-in transforms still apply. [Evidence:
 `crates/direa-cli/src/build.rs` (`resolve_js_adapter`, `apply_js_adapter`); test
 `external_adapter_protocol_round_trips`] -> Never make an adapter a hard build
 dependency. (ADR-0009)
+
+**K-015 — A static token probe cannot measure string *encoding*.**
+`javascript-obfuscator`'s base64 string array replaces plaintext with encoded
+blobs; token counting still sees them as recoverable tokens, and their volume can
+exceed the baseline, so `string-exposure` stays at or above 1.0. [Evidence:
+`die-a-rea` JS demo — 196 tokens after obfuscation, exposure 1.00] ->
+Encoding-aware discounting (detect and down-weight base64/hex blobs) is required
+to score it; tracked as B-018. (Open)

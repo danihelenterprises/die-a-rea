@@ -317,25 +317,10 @@ fn merge(into: &mut InjectedStats, other: &InjectedStats) {
     into.injected_bytes += other.injected_bytes;
 }
 
-/// Count printable sequences (>= `min` chars), matching the verify `strings`
-/// probe so injected content can be discounted exactly.
-fn printable_runs(bytes: &[u8], min: usize) -> u64 {
-    let mut runs = 0u64;
-    let mut len = 0usize;
-    for &b in bytes {
-        if (0x20..=0x7e).contains(&b) {
-            len += 1;
-        } else {
-            if len >= min {
-                runs += 1;
-            }
-            len = 0;
-        }
-    }
-    if len >= min {
-        runs += 1;
-    }
-    runs
+/// Count identifier/literal tokens, matching the verify `strings` probe so
+/// injected content can be discounted exactly (see `direa_core::scan`).
+fn token_runs(bytes: &[u8]) -> u64 {
+    direa_core::scan::count_tokens(bytes, direa_core::scan::DEFAULT_MIN_TOKEN)
 }
 
 /// Resolve the optional external JavaScript adapter.
@@ -573,7 +558,7 @@ fn write_decoy_tree(
 
     if policy.tarpit {
         let (padding, bytes) = generate_padding(rng, tp.padding_kb, tp.max_total_kb, notice);
-        stats.injected_string_runs += printable_runs(padding.as_bytes(), 6);
+        stats.injected_string_runs += token_runs(padding.as_bytes());
         std::fs::write(dir.join("data.js"), &padding).ok();
         stats.padding_bytes += bytes;
         stats.injected_bytes += bytes;
@@ -604,8 +589,7 @@ fn harden_native(
         data.extend_from_slice(blob.as_bytes());
         stats.padding_bytes = bytes + notice.len() as u64 + 8;
         stats.injected_bytes += stats.padding_bytes;
-        stats.injected_string_runs =
-            printable_runs(&data[data.len() - stats.padding_bytes as usize..], 6);
+        stats.injected_string_runs = token_runs(&data[data.len() - stats.padding_bytes as usize..]);
     }
     std::fs::write(dest, data).with_context(|| format!("writing {}", dest.display()))?;
     Ok(report)
@@ -665,7 +649,7 @@ fn generate_js_bundle(
     }
 
     stats.injected_bytes = before(&out);
-    stats.injected_string_runs = printable_runs(out.as_bytes(), 6);
+    stats.injected_string_runs = token_runs(out.as_bytes());
     (out, stats)
 }
 

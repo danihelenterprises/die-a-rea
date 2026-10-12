@@ -17,7 +17,7 @@ not affect the score.
 
 | Axis | Default weight | Probe |
 |---|---:|---|
-| `string-exposure` | 1.5 | signal-to-noise of printable sequences (`strings` proxy) |
+| `string-exposure` | 1.5 | signal-to-noise of identifier/literal tokens (ADR-0010) |
 | `symbol-exposure` | 1.0 | symbol/relocation section markers (`nm` proxy) |
 | `debug-metadata-exposure` | 0.8 | DWARF/PDB markers (boolean) |
 | `source-map-exposure` | 1.2 | `*.map`, `sourceMappingURL`, `sourcesContent` |
@@ -35,6 +35,12 @@ metadata is present, `string-exposure` measures `real / (real + injected)`
 instead of raw count ratio. Adding 500 decoy strings to a file with 8 real
 strings yields an exposure near `0.02`, i.e. almost all of what an analyst
 recovers is noise.
+
+The unit is an **identifier/literal token** (`[A-Za-z0-9_$]`, >= 6 bytes), not a
+contiguous printable run, so a minified single-line bundle does not collapse to a
+single measurement (ADR-0010). Limitation: a static byte probe cannot see string
+*encoding* — base64/hex blobs are still tokens, so encoding-based obfuscation may
+not lower exposure until encoder-aware discounting lands (K-015, B-018).
 
 ### Inapplicable axes are skipped
 

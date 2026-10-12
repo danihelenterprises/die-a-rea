@@ -15,6 +15,7 @@ pub mod planner;
 pub mod policy;
 pub mod random;
 pub mod rrs;
+pub mod scan;
 
 pub use adapter::{
     which, AdapterEntry, AdapterOp, AdapterRequest, AdapterResponse, Finding, PlanStep, Severity,
@@ -28,3 +29,4 @@ pub use planner::{detect_kind, plan_manifest, BuildPlan, TargetKind};
 pub use policy::{PolicyOverrides, Profile, ResolvedPolicy};
 pub use random::{derive_seed, Rng};
 pub use rrs::{Axis, AxisMeasurement, Grade, ResistanceReport};
+pub use scan::{count_tokens, DEFAULT_MIN_TOKEN};

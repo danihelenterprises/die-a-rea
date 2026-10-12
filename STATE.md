@@ -42,9 +42,9 @@ to bottom unless a dependency says otherwise.
 
 1. **B-001 — LLVM adapter.** Acceptance: `plan` lists `llvm` as available for an
    ELF target and `build` applies a control-flow pass with all tests green.
-2. **B-017 — Token/literal-aware `strings` probe.** Acceptance: a compact
-   (single-line) JS bundle no longer reads as a single sequence, and
-   `string-exposure` responds to obfuscation. Unblocks B-003's metric clause.
+2. **B-018 — Encoder-aware `strings` probe.** Acceptance: detecting base64/hex
+   blobs lowers `string-exposure` for an encoded JS bundle versus its plaintext
+   baseline. Unblocks B-003's metric clause (K-015).
 3. **B-002 — Go adapter (garble + build-info strip).** Acceptance: a Go binary
    built through the adapter contains no `Go build ID` and no source paths.
 4. **B-007 — Runtime guard library + `runtime-instrumentation-exposure` axis.**
@@ -96,7 +96,9 @@ to bottom unless a dependency says otherwise.
   `DIREA_JS_ADAPTER` or `direa-js` is available (ADR-0009); e.g. a bundle
   obfuscated by `javascript-obfuscator`. Absence is a note, not an error.
 - `die-a-rea verify --original A --hardened B` prints an RRS report; `--json`
-  for CI; `--with-rea` runs the external adversary when available.
+  for CI; `--with-rea` runs the external adversary when available. The
+  `strings` axis counts identifier/literal tokens (`direa_core::scan`), so a
+  minified single-line bundle still scores (ADR-0010).
 
 ## SKIP-LIST — do not start without a new decision
 
@@ -115,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 45 |
-| Backlog items (`B-NNN`) | 17 |
+| Tests (`cargo test --all`) | 50 |
+| Backlog items (`B-NNN`) | 18 |
 | Open backlog items (High) | 4 |
-| Durable lessons (`K-NNN`) | 14 |
-| Decision records (`ADR-NNNN`) | 9 |
-| Markdown docs (tracked) | 25 |
-| Commits in history | 5 |
+| Durable lessons (`K-NNN`) | 15 |
+| Decision records (`ADR-NNNN`) | 10 |
+| Markdown docs (tracked) | 26 |
+| Commits in history | 6 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -144,3 +146,7 @@ to bottom unless a dependency says otherwise.
   K-014); run end-to-end against `javascript-obfuscator`. B-003 stays
   In-progress: the metric clause is blocked by the probe blind spot (B-017,
   K-013).
+- **B-017 (commit 6):** `strings` probe now counts identifier/literal tokens
+  (`direa_core::scan`), fixing the minified-file collapse (ADR-0010, K-013).
+  Closed `B-017`; discovered a deeper limit — byte probes cannot see string
+  encoding (K-015) — and opened `B-018`.

@@ -303,7 +303,7 @@ fn strip_elf(data: &mut [u8], report: &mut StripReport) -> Result<(), String> {
     // Scrub the removed names from .shstrtab so the literals no longer appear.
     for name in &removed_names {
         let needle = name.as_bytes();
-        scrub_all(data, needle, b'_');
+        scrub_all(data, needle, b' ');
     }
 
     if !removed_names.is_empty() {
@@ -316,8 +316,9 @@ fn strip_elf(data: &mut [u8], report: &mut StripReport) -> Result<(), String> {
     Ok(())
 }
 
-/// Overwrite every occurrence of `needle` in `data` with `fill`, preserving the
-/// first and last byte when they are framing (NUL terminators are preserved).
+/// Overwrite every occurrence of `needle` in `data` with `fill`, preserving NUL
+/// terminators. `fill` must not be a token byte (see `direa_core::scan`) so the
+/// scrubbed name does not itself count as a recoverable token.
 fn scrub_all(data: &mut [u8], needle: &[u8], fill: u8) {
     if needle.is_empty() || data.len() < needle.len() {
         return;

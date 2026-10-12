@@ -7,6 +7,7 @@
 
 use std::path::{Path, PathBuf};
 
+use direa_core::scan::count_tokens;
 use direa_core::Axis;
 
 /// Whether a probe's raw value is a count (normalised as a ratio vs. baseline)
@@ -81,7 +82,8 @@ fn walk(dir: &Path, out: &mut Vec<Vec<u8>>, files: &mut usize) -> Result<(), Str
     Ok(())
 }
 
-/// A lightweight, standalone printable-string scanner (a `strings` proxy).
+/// A token scanner for recoverable identifier/literal names (a `strings`-style
+/// proxy that does not collapse on minified single-line files).
 pub struct StringProbe;
 
 impl Probe for StringProbe {
@@ -96,35 +98,16 @@ impl Probe for StringProbe {
     }
     fn measure(&self, target: &Path) -> Result<ProbeReading, String> {
         let blobs = collect_bytes(target)?;
-        let mut count = 0usize;
+        let mut count = 0u64;
         for bytes in &blobs {
-            count += count_printable_runs(bytes, 6);
+            count += count_tokens(bytes, direa_core::scan::DEFAULT_MIN_TOKEN);
         }
         Ok(ProbeReading {
             axis: self.axis(),
             raw: count as f64,
-            detail: format!("{count} printable sequences (>=6 chars)"),
+            detail: format!("{count} identifier/literal tokens (>=6 chars)"),
         })
     }
-}
-
-fn count_printable_runs(bytes: &[u8], min: usize) -> usize {
-    let mut runs = 0;
-    let mut len = 0;
-    for &b in bytes {
-        if (0x20..=0x7e).contains(&b) {
-            len += 1;
-        } else {
-            if len >= min {
-                runs += 1;
-            }
-            len = 0;
-        }
-    }
-    if len >= min {
-        runs += 1;
-    }
-    runs
 }
 
 /// Counts symbol/relocation section markers as a proxy for symbol recovery.
@@ -348,13 +331,24 @@ mod tests {
     }
 
     #[test]
-    fn strings_counts_runs() {
+    fn strings_counts_tokens() {
         let p = temp_file(
             "strings.bin",
-            b"\x00hello world\x00hi\x00longenoughstring\x00",
+            b"\x00helloworld\x00hi\x00longenoughstring\x00anothertoken\x00",
         );
         let reading = StringProbe.measure(&p).unwrap();
-        assert!(reading.raw >= 2.0);
+        assert!(reading.raw >= 3.0);
+        let _ = std::fs::remove_file(p);
+    }
+
+    #[test]
+    fn strings_does_not_collapse_on_one_line() {
+        let p = temp_file(
+            "minified.js",
+            b"var abcdef=123456;function ghijkl(){return mnoPQR;}",
+        );
+        let reading = StringProbe.measure(&p).unwrap();
+        assert!(reading.raw >= 3.0, "a minified line must yield many tokens");
         let _ = std::fs::remove_file(p);
     }
 
