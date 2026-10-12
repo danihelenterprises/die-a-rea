@@ -396,6 +396,7 @@ fn strip_pe(data: &mut [u8], report: &mut StripReport) -> Result<(), String> {
     if data.get(pe_off..pe_off + 4) != Some(b"PE\0\0") {
         return Err("bad PE signature".into());
     }
+    strip_pe_rich_header(data, pe_off, report);
     let coff = pe_off + 4;
     let timestamp_off = coff + 4;
     let ptr_sym_off = coff + 8;
@@ -464,6 +465,23 @@ fn strip_pe(data: &mut [u8], report: &mut StripReport) -> Result<(), String> {
         report.changed = true;
     }
     Ok(())
+}
+
+/// Zero the PE "Rich" header: the build-tool fingerprint that sits between the
+/// DOS stub and the PE header. Resources are deliberately left intact — they are
+/// needed at runtime (icons, manifests, version info) — so only the fingerprint
+/// is removed.
+fn strip_pe_rich_header(data: &mut [u8], pe_off: usize, report: &mut StripReport) {
+    let limit = pe_off.min(data.len());
+    if limit < 4 {
+        return;
+    }
+    if let Some(pos) = find_sub(&data[..limit], b"Rich") {
+        let n = zero_range(data, pos as u64, (limit - pos) as u64);
+        if n > 0 {
+            report.note("PE Rich header", n);
+        }
+    }
 }
 
 /// Map a PE RVA to a file offset using the section table.
@@ -610,6 +628,9 @@ mod tests {
         let mut d = vec![0u8; 0x600];
         d[0..2].copy_from_slice(b"MZ");
         put32(&mut d, 0x3C, 0x80); // e_lfanew
+                                   // Rich header fingerprint between the DOS stub and the PE header.
+        d[0x50..0x54].copy_from_slice(b"Rich");
+        put32(&mut d, 0x54, 0x1122_3344);
         d[0x80..0x84].copy_from_slice(b"PE\0\0");
         let coff = 0x84;
         put16(&mut d, coff, 0x8664); // Machine
@@ -716,6 +737,15 @@ mod tests {
             u32::from_le_bytes(d[0x98 + 112 + 6 * 8..][..4].try_into().unwrap()),
             0
         );
+    }
+
+    #[test]
+    fn pe_rich_header_scrubbed() {
+        let mut d = pe_fixture();
+        assert!(find(&d, b"Rich").is_some());
+        let r = strip_symbols(&mut d);
+        assert!(r.removed.iter().any(|s| s.contains("Rich header")));
+        assert!(find(&d, b"Rich").is_none());
     }
 
     #[test]

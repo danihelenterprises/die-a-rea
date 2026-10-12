@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-023 — PE resources are runtime-needed and intentionally preserved.**
+`native_post` strips the PE Rich header fingerprint (build-tool correlation) but
+leaves the resource directory intact — icons, manifests and version info are used
+at runtime. [Evidence: `crates/direa-core/src/native_post.rs`
+(`strip_pe_rich_header`); test `pe_rich_header_scrubbed`] -> Strip fingerprints,
+not resources; any future resource scrub must be opt-in and behaviour-tested.
+(ADR-0008)
+
 **K-022 — MSRV is 1.79; the exercised toolchain is 1.96.1.** `std::path::absolute`
 (used by `build`'s output guard) stabilised in Rust 1.79, which sets the floor;
 CI pins `stable`. [Evidence: `Cargo.toml` (`rust-version = "1.79"`); `rustc

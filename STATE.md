@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 65 |
+| Tests (`cargo test --all`) | 66 |
 | Backlog items (`B-NNN`) | 22 |
 | Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 22 |
+| Durable lessons (`K-NNN`) | 23 |
 | Decision records (`ADR-NNNN`) | 15 |
 | Markdown docs (tracked) | 34 |
-| Commits in history | 16 |
+| Commits in history | 17 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -177,3 +177,5 @@ to bottom unless a dependency says otherwise.
   via `guard::detect_with`. Closed `B-021`.
 - **B-014 (commit 16):** docs-check counter heuristic made fatal with a broader
   pattern and a `--self-test` in CI. Closed `B-014`.
+- **B-016 (commit 17):** PE Rich header stripped; resources preserved (K-023).
+  Closed `B-016`.

@@ -30,7 +30,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-013 | Validate and bound deceptive `agent_decoys` payloads before any default use | Medium | Agent | Open | `docs/ETHICS.md` and ADR-0006 keep deception opt-in; depends on B-009. |
 | B-014 | Strengthen the docs-check counter-duplication heuristic | Low | Tooling | Closed | Fatal by default, broader labels, and `--self-test` (wired into CI). |
 | B-015 | Extend `native-post` to Mach-O DWARF sections and fat containers | Medium | Adapters | Open | `native_post.rs` handles only `LC_SYMTAB`; `__DWARF`/segment names and FAT remain. |
-| B-016 | Extend `native-post` to PE resources and the rich header | Low | Adapters | Open | The PE handler clears the COFF symbol table and debug directory only. |
+| B-016 | Extend `native-post` to PE resources and the rich header | Low | Adapters | Closed | Rich header fingerprint stripped; resources intentionally preserved as runtime-needed (K-023). |
 | B-017 | Make the `strings` probe token/literal-aware so minified JS scores correctly | High | RRS | Closed | Done: `direa_core::scan::count_tokens` (ADR-0010). A minified line no longer collapses to one sequence. |
 | B-018 | Make the `strings` axis respond to string encoding | High | RRS | Closed | Solved as verbatim survival rather than base64 detection (ADR-0011, K-016): obfuscated JS now scores 0.56. |
 | B-019 | Guard `build` against overwriting the source artifact or a foreign output directory | High | CLI | Closed | `guard_source_and_output` plus the non-empty-`--out` check; `--force` overrides (ADR-0012, K-017). |
@@ -69,3 +69,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   instrumentation_signatures` into `guard::detect_with`.
 - **B-014 (Closed, commit 16):** docs-check counter heuristic is fatal, broader,
   and has a `--self-test` wired into CI.
+- **B-016 (Closed, commit 17):** `native-post` strips the PE Rich header; PE
+  resources are preserved deliberately (K-023).
