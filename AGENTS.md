@@ -57,6 +57,12 @@ or a list of the documents touched and what changed.
 If you learn durable knowledge, mint or amend a `K-NNN` entry **in the same
 change**. If you make a decision that constrains future work, add an ADR.
 
+**README currency.** When a change alters anything user-facing — installation, the
+CLI, manifest options, adapters, or the setup workflow — update `README.md`
+(including the **vibe-coder prompt** at its bottom, when the setup steps change)
+in the same change. If nothing user-facing changed, no README update is needed;
+say so plainly in the `Doc impact:` line.
+
 ## Workflow
 
 1. Pick the next item from the ordered work list in `STATE.md`, or open a new

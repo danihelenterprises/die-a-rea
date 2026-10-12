@@ -65,6 +65,9 @@ Every change leaves every document true. Walk this list before committing:
 - [ ] Did you learn a **durable lesson**? → a `K-NNN` entry (same change).
 - [ ] Did you make a **constraining decision**? → a new `ADR-NNNN` (never edit an
       existing one).
+- [ ] Does it change **installation, the CLI, manifest options, adapters, or the
+      setup workflow**? → update `README.md` *and* the vibe-coder prompt at its
+      bottom (only when user-facing).
 - [ ] Did any number change? → update only the canonical table in `STATE.md`.
 - [ ] Is there open work left? → a `B-NNN` row in `BACKLOG.md`.
 - [ ] Does every commit body end with `Doc impact: …`?

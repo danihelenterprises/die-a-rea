@@ -306,6 +306,53 @@ licenses; see [docs/PIGGYBACK.md](docs/PIGGYBACK.md).
 be used to hide malware or other malicious behaviour from defenders. See
 [docs/ETHICS.md](docs/ETHICS.md).
 
+## For vibe coders — paste this into your AI
+
+Not a security engineer? You don't need to be. Copy the block below into your coding
+agent (Claude Code, Cursor, Codex, Gemini CLI, …) from the root of your own project and
+let it wire `die-a-rea` in: it installs the tool, finds your shipped artifact, hardens
+it, scores the result, and adds a CI gate — then reports back before finishing.
+
+```text
+You are integrating die-a-rea (https://github.com/danihelenterprises/die-a-rea) into
+THIS project as a build-time hardening + measurement step. Use it only on software the
+project owner is authorized to protect.
+
+Do the following, and show me the plan before you finish:
+
+1. Get the CLI:
+     git clone https://github.com/danihelenterprises/die-a-rea /tmp/die-a-rea
+     cargo build --release --manifest-path /tmp/die-a-rea/Cargo.toml
+     export PATH="/tmp/die-a-rea/target/release:$PATH"     # provides `die-a-rea`
+2. Find this project's SHIPPED artifacts (the binary, JS/Electron bundle or *.asar,
+   .NET assembly, WASM, or APK). Inspect the build/package scripts; ask me if unsure.
+3. Create and edit the manifest:
+     die-a-rea init --name <project> <artifact-1> [artifact-2 ...]
+   In die-a-rea.toml set:
+     [policy] profile = "high"
+     [agent_defense] canaries = ["<project>-<YYYYMMDD>"]
+   Keep [tarpit] defaults unless the artifact is size-sensitive.
+4. Preview and harden:
+     die-a-rea plan
+     die-a-rea build --out dist-hardened
+   Missing adapters are reported, not fatal. Native ELF/PE/Mach-O stripping and the
+   JavaScript adapter are built in; LLVM/Go/.NET/Android adapters are optional.
+5. Score it and gate CI:
+     die-a-rea verify --original <artifact-1> --hardened dist-hardened/<artifact-1>
+   Add a CI step that fails if the RRS drops below the threshold I choose. The metric
+   is documented in docs/RRS.md.
+6. JavaScript/Electron only: install `javascript-obfuscator` in this project and point
+   the build at the bundled adapter:
+     export DIREA_JS_ADAPTER=/tmp/die-a-rea/adapters/js/direa-js
+7. Read AGENTS.md, docs/THREAT-MODEL.md and docs/ETHICS.md in the die-a-rea checkout
+   before making further changes. Do NOT commit or push until I say so. Report what you
+   hardened, the before/after RRS, and anything left undone.
+```
+
+> `die-a-rea` raises the cost of *automated* reverse engineering and measures the
+> improvement; it does not make software unbreakable. See
+> [Scope and honesty](#scope-and-honesty).
+
 <div align="center">
 <sub>Built so the people who make things can keep making them.</sub>
 </div>
