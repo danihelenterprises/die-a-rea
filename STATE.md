@@ -123,7 +123,7 @@ to bottom unless a dependency says otherwise.
 | Durable lessons (`K-NNN`) | 27 |
 | Decision records (`ADR-NNNN`) | 16 |
 | Markdown docs (tracked) | 35 |
-| Commits in history | 23 |
+| Commits in history | 24 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -191,3 +191,5 @@ to bottom unless a dependency says otherwise.
   adapter (K-027). Closed `B-001`.
 - **B-005 (commit 23):** `.NET` reference adapter `adapters/clr/direa-clr`.
   Closed `B-005`.
+- **B-006 (commit 24):** JVM/Android reference adapter `adapters/jvm/direa-jvm`.
+  Closed `B-006`.
