@@ -42,33 +42,30 @@ to bottom unless a dependency says otherwise.
 
 1. **B-001 — LLVM adapter.** Acceptance: `plan` lists `llvm` as available for an
    ELF target and `build` applies a control-flow pass with all tests green.
-2. **B-018 — Encoder-aware `strings` probe.** Acceptance: detecting base64/hex
-   blobs lowers `string-exposure` for an encoded JS bundle versus its plaintext
-   baseline. Unblocks B-003's metric clause (K-015).
-3. **B-002 — Go adapter (garble + build-info strip).** Acceptance: a Go binary
+2. **B-002 — Go adapter (garble + build-info strip).** Acceptance: a Go binary
    built through the adapter contains no `Go build ID` and no source paths.
-4. **B-007 — Runtime guard library + `runtime-instrumentation-exposure` axis.**
+3. **B-007 — Runtime guard library + `runtime-instrumentation-exposure` axis.**
    Acceptance: a unit test detects a debugger/instrumentation signature and the
    axis appears in the report.
-5. **B-005 — .NET adapter (ConfuserEx).** Acceptance: an assembly is protected
+4. **B-005 — .NET adapter (ConfuserEx).** Acceptance: an assembly is protected
    end-to-end and `verify` reports the CLR-safe axes.
-6. **B-006 — Android/JVM adapter (R8/ProGuard).** Acceptance: a config is
+5. **B-006 — Android/JVM adapter (R8/ProGuard).** Acceptance: a config is
    generated and applied via subprocess; no copyleft code is linked (ADR-0007).
-7. **B-008 — `direa-canary` adapter.** Acceptance: detector-hardened payloads
+6. **B-008 — `direa-canary` adapter.** Acceptance: detector-hardened payloads
    are generated and round-trip through `build`.
-8. **B-009 — Detector-hardening gauntlet.** Acceptance: the NPS-style detector
+7. **B-009 — Detector-hardening gauntlet.** Acceptance: the NPS-style detector
    is run against our canaries in CI and reports detection rates.
-9. **B-011 — `CONTRIBUTING.md` + `CHANGELOG.md`.** Acceptance: both exist and
+8. **B-011 — `CONTRIBUTING.md` + `CHANGELOG.md`.** Acceptance: both exist and
    are indexed in `docs/README.md`.
-10. **B-012 — Declare MSRV.** Acceptance: `rust-version` is set and the exercised
-    toolchain is recorded in `KNOWLEDGE.md`.
-11. **B-013 — Bound deceptive `agent_decoys`.** Acceptance: a decision ADR
+9. **B-012 — Declare MSRV.** Acceptance: `rust-version` is set and the exercised
+   toolchain is recorded in `KNOWLEDGE.md`.
+10. **B-013 — Bound deceptive `agent_decoys`.** Acceptance: a decision ADR
     records the validated limits (depends on B-009).
-12. **B-014 — Strengthen docs-check counter heuristic.** Acceptance: the check
+11. **B-014 — Strengthen docs-check counter heuristic.** Acceptance: the check
     fails on a planted duplicate counter and passes on the clean tree.
-13. **B-015 — Mach-O DWARF/fat `native-post`.** Acceptance: `__DWARF` sections
+12. **B-015 — Mach-O DWARF/fat `native-post`.** Acceptance: `__DWARF` sections
     and fat containers lose symbol/debug metadata (follow-up to B-004).
-14. **B-016 — PE resources/rich-header `native-post`.** Acceptance: PE resource
+13. **B-016 — PE resources/rich-header `native-post`.** Acceptance: PE resource
     and rich-header metadata are stripped (follow-up to B-004).
 
 ## Per-change loop
@@ -97,8 +94,9 @@ to bottom unless a dependency says otherwise.
   obfuscated by `javascript-obfuscator`. Absence is a note, not an error.
 - `die-a-rea verify --original A --hardened B` prints an RRS report; `--json`
   for CI; `--with-rea` runs the external adversary when available. The
-  `strings` axis counts identifier/literal tokens (`direa_core::scan`), so a
-  minified single-line bundle still scores (ADR-0010).
+  `strings` axis measures verbatim survival of baseline tokens (`direa_core::scan`
+  token sets), so minified bundles, encoding and stripping all score correctly
+  (ADR-0011).
 
 ## SKIP-LIST — do not start without a new decision
 
@@ -117,13 +115,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 50 |
+| Tests (`cargo test --all`) | 51 |
 | Backlog items (`B-NNN`) | 18 |
-| Open backlog items (High) | 4 |
-| Durable lessons (`K-NNN`) | 15 |
-| Decision records (`ADR-NNNN`) | 10 |
-| Markdown docs (tracked) | 26 |
-| Commits in history | 6 |
+| Open backlog items (High) | 3 |
+| Durable lessons (`K-NNN`) | 16 |
+| Decision records (`ADR-NNNN`) | 11 |
+| Markdown docs (tracked) | 27 |
+| Commits in history | 7 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -150,3 +148,7 @@ to bottom unless a dependency says otherwise.
   (`direa_core::scan`), fixing the minified-file collapse (ADR-0010, K-013).
   Closed `B-017`; discovered a deeper limit — byte probes cannot see string
   encoding (K-015) — and opened `B-018`.
+- **B-018 (commit 7):** `strings` axis redefined as verbatim survival of baseline
+  tokens (ADR-0011, K-016), superseding ADR-0005's count formula. Encoding now
+  scores without heuristics; closed `B-018` and `B-003` (JS adapter clause now
+  passes: 5/9 tokens survive vs 9/9 for the built-in path).

@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -134,18 +135,27 @@ pub fn measure(
                 // The string axis is a signal-to-noise measure: an analyst can
                 // always read strings, so resistance comes from diluting real
                 // strings with decoys.
-                if let (true, Some(m)) = (probe.name() == "strings", meta) {
-                    let injected = m.injected.injected_string_runs as f64;
-                    let total = h.raw;
-                    let real = (h.raw - injected).max(0.0);
-                    let be = if b.raw > 0.0 { 1.0 } else { 0.0 };
-                    let he = if total > 0.0 { real / total } else { 0.0 };
+                if probe.name() == "strings" {
+                    // Verbatim survival: how many of the baseline's tokens are
+                    // still readable in the hardened artifact. This rewards
+                    // removal (native-post) and encoding (JS obfuscation) without
+                    // any heuristics; dilution is scored by analysis-noise
+                    // (ADR-0011, K-016).
+                    let base = token_set(original);
+                    let hard = token_set(hardened);
+                    let be = if base.is_empty() { 0.0 } else { 1.0 };
+                    let leaked = base.intersection(&hard).count() as f64;
+                    let he = if base.is_empty() {
+                        0.0
+                    } else {
+                        (leaked / base.len() as f64).clamp(0.0, 1.0)
+                    };
                     measurements.push(AxisMeasurement::new(probe.axis(), be, he));
                     notes.push(format!(
-                        "{}: {:.0} real of {:.0} sequences ({injected:.0} injected) (exposure {:.2} -> {:.2})",
+                        "{}: {:.0} of {:.0} baseline tokens still verbatim (exposure {:.2} -> {:.2})",
                         probe.name(),
-                        real,
-                        total,
+                        leaked,
+                        base.len(),
                         be,
                         he
                     ));
@@ -189,6 +199,19 @@ pub fn measure(
     }
 
     (measurements, notes)
+}
+
+/// Distinct identifier/literal tokens (>= 6 bytes) across a target's files.
+fn token_set(path: &Path) -> BTreeSet<Vec<u8>> {
+    let mut set = BTreeSet::new();
+    if let Ok(blobs) = crate::probes::collect_bytes(path) {
+        for bytes in &blobs {
+            for token in direa_core::scan::token_runs(bytes, direa_core::scan::DEFAULT_MIN_TOKEN) {
+                set.insert(token.to_vec());
+            }
+        }
+    }
+    set
 }
 
 /// Compute `(baseline_exposure, hardened_exposure)` in `[0, 1]`.

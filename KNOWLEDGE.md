@@ -113,3 +113,11 @@ exceed the baseline, so `string-exposure` stays at or above 1.0. [Evidence:
 `die-a-rea` JS demo — 196 tokens after obfuscation, exposure 1.00] ->
 Encoding-aware discounting (detect and down-weight base64/hex blobs) is required
 to score it; tracked as B-018. (Open)
+
+**K-016 — String exposure is verbatim survival, not a count.** Any count ratio
+(raw or token) reads ~1.0 for `javascript-obfuscator` output because obfuscation
+*adds* identifiers that outweigh the encoded literals. Measuring how many of the
+baseline's tokens still appear verbatim drops correctly (demo: 5 of 9 survive).
+[Evidence: `crates/direa-verify/src/harness.rs` (`token_set`, strings branch);
+ADR-0011] -> Never score the strings axis with a count; extract token sets from
+both artifacts and intersect. (ADR-0011)

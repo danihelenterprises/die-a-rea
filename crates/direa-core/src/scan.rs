@@ -6,6 +6,11 @@
 //! tokens do not collapse a minified, single-line file into one blob (lesson
 //! K-013), and they match how symbol and literal names actually appear in
 //! binaries and bundles.
+//!
+//! The `strings` axis consumes a *set* of these tokens so it can measure how
+//! much of the original signal survives verbatim (see `token_runs` and
+//! ADR-0011). That approach handles string encoding without heuristics: an
+//! encoded blob is simply not one of the original tokens.
 
 /// Default minimum token length.
 pub const DEFAULT_MIN_TOKEN: usize = 6;
@@ -36,6 +41,33 @@ pub fn count_tokens(bytes: &[u8], min: usize) -> u64 {
     count
 }
 
+/// Collect every distinct token of at least `min` bytes.
+///
+/// Used to measure verbatim survival: the fraction of the baseline's tokens that
+/// still appear in the hardened artifact. Ordering is not meaningful.
+pub fn token_runs(bytes: &[u8], min: usize) -> Vec<&[u8]> {
+    let mut out = Vec::new();
+    let mut start = 0usize;
+    let mut len = 0usize;
+    for (i, &b) in bytes.iter().enumerate() {
+        if is_token_byte(b) {
+            if len == 0 {
+                start = i;
+            }
+            len += 1;
+        } else {
+            if len >= min {
+                out.push(&bytes[start..start + len]);
+            }
+            len = 0;
+        }
+    }
+    if len >= min {
+        out.push(&bytes[start..start + len]);
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -53,14 +85,26 @@ mod tests {
     }
 
     #[test]
-    fn skips_short_and_keeps_long() {
-        let src = b"ok longenough xx  anotherlong";
-        assert_eq!(count_tokens(src, DEFAULT_MIN_TOKEN), 2);
-    }
-
-    #[test]
     fn separators_break_tokens() {
         // Punctuation is not a token byte.
         assert_eq!(count_tokens(b"abcdef.ghijkl", DEFAULT_MIN_TOKEN), 2);
+    }
+
+    #[test]
+    fn token_runs_returns_slices() {
+        let src = b"\x00deadbeefdeadbeef\x00SUPER_SECRET_LICENSE\x00ok\x00";
+        let runs = token_runs(src, DEFAULT_MIN_TOKEN);
+        assert_eq!(runs.len(), 2);
+        assert!(runs.contains(&&b"deadbeefdeadbeef"[..]));
+        assert!(runs.contains(&&b"SUPER_SECRET_LICENSE"[..]));
+    }
+
+    #[test]
+    fn token_runs_agrees_with_count() {
+        let src = b"aaa bbbb ccccc dddddd eeeeeee";
+        assert_eq!(
+            token_runs(src, DEFAULT_MIN_TOKEN).len() as u64,
+            count_tokens(src, DEFAULT_MIN_TOKEN)
+        );
     }
 }

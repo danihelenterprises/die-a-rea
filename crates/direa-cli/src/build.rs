@@ -317,8 +317,9 @@ fn merge(into: &mut InjectedStats, other: &InjectedStats) {
     into.injected_bytes += other.injected_bytes;
 }
 
-/// Count identifier/literal tokens, matching the verify `strings` probe so
-/// injected content can be discounted exactly (see `direa_core::scan`).
+/// Count tokens in injected content. Informational: the `strings` axis now
+/// measures verbatim survival of the baseline's tokens (ADR-0011), so this no
+/// longer discounts anything, but it is retained in the build metadata.
 fn token_runs(bytes: &[u8]) -> u64 {
     direa_core::scan::count_tokens(bytes, direa_core::scan::DEFAULT_MIN_TOKEN)
 }

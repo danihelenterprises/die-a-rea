@@ -15,7 +15,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 |---|---|---|---|---|---|
 | B-001 | Implement the LLVM adapter (C/C++/Rust/Swift) wrapping Pluto/O-MVLL passes | High | Adapters | Open | `planner.rs` registers `llvm` → `direa-llvm`, which does not exist yet. |
 | B-002 | Implement the Go adapter (garble: identifiers, literals, strip build info) | High | Adapters | Open | REA has a built-in Go provider; stripping build info is the direct counter. |
-| B-003 | Implement the JavaScript/Electron adapter (javascript-obfuscator + bytenode/asarmor) | High | Adapters | In-progress | Adapter implemented, wired and tested (ADR-0009). Its `string-exposure` clause needs an encoding-aware probe (B-018), since a byte probe cannot see string encoding (K-015). |
+| B-003 | Implement the JavaScript/Electron adapter (javascript-obfuscator + bytenode/asarmor) | High | Adapters | Closed | Adapter implemented, wired, tested (ADR-0009). Its `string-exposure` clause passes: obfuscated 5/9 baseline tokens survive vs 9/9 for the built-in path (ADR-0011). |
 | B-004 | Implement built-in `native-post` stripping (symbols/debug/build metadata) for ELF/Mach-O/PE | High | Adapters | Closed | In-process `native_post.rs` (ELF/PE/Mach-O); wired via `harden_native`. Mach-O DWARF/fat + PE resources remain follow-ups. |
 | B-005 | Implement the .NET adapter (ConfuserEx driver) | Medium | Adapters | Open | Registry lists `clr`; no implementation. |
 | B-006 | Implement the Android/JVM adapter (R8/ProGuard config generation) | Medium | Adapters | Open | Registry lists `android`; Promises GPL tool stays subprocess-only (ADR-0007). |
@@ -30,7 +30,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-015 | Extend `native-post` to Mach-O DWARF sections and fat containers | Medium | Adapters | Open | `native_post.rs` handles only `LC_SYMTAB`; `__DWARF`/segment names and FAT remain. |
 | B-016 | Extend `native-post` to PE resources and the rich header | Low | Adapters | Open | The PE handler clears the COFF symbol table and debug directory only. |
 | B-017 | Make the `strings` probe token/literal-aware so minified JS scores correctly | High | RRS | Closed | Done: `direa_core::scan::count_tokens` (ADR-0010). A minified line no longer collapses to one sequence. |
-| B-018 | Encoder-aware `strings` probe: down-weight base64/hex blobs | High | RRS | Open | A static token probe cannot see string encoding (K-015). Required before B-003's `string-exposure` clause can pass. |
+| B-018 | Make the `strings` axis respond to string encoding | High | RRS | Closed | Solved as verbatim survival rather than base64 detection (ADR-0011, K-016): obfuscated JS now scores 0.56. |
 
 ## Closed / Decided
 
@@ -42,3 +42,6 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 - **B-017 (Closed, commit 6):** `strings` probe now counts identifier/literal
   tokens via `direa_core::scan` (ADR-0010); minified files no longer collapse to
   a single sequence.
+- **B-018 (Closed, commit 7):** `strings` axis redefined as verbatim survival
+  (ADR-0011, K-016); base64/hex heuristics unnecessary. Closed **B-003** too —
+  its `string-exposure` clause now passes.

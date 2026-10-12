@@ -30,17 +30,18 @@ Weights are `Axis::weight` and can be overridden per measurement.
 
 ### Signal-to-noise for strings
 
-An analyst can always read strings; decoys do not remove them. So when build
-metadata is present, `string-exposure` measures `real / (real + injected)`
-instead of raw count ratio. Adding 500 decoy strings to a file with 8 real
-strings yields an exposure near `0.02`, i.e. almost all of what an analyst
-recovers is noise.
+An analyst can always read strings; the question is whether the **original**
+strings survive. `string-exposure` measures **verbatim survival**: the fraction
+of the baseline artifact's distinct identifier/literal tokens (`[A-Za-z0-9_$]`,
+>= 6 bytes) that still appear in the hardened artifact. Encoding is handled with
+no heuristics — an encoded literal is simply not one of the baseline's tokens —
+so an obfuscated bundle scores below 1.0 (e.g. 5 of 9 tokens survive). Decoys are
+scored by the analysis-noise axis, not here (ADR-0011).
 
-The unit is an **identifier/literal token** (`[A-Za-z0-9_$]`, >= 6 bytes), not a
-contiguous printable run, so a minified single-line bundle does not collapse to a
-single measurement (ADR-0010). Limitation: a static byte probe cannot see string
-*encoding* — base64/hex blobs are still tokens, so encoding-based obfuscation may
-not lower exposure until encoder-aware discounting lands (K-015, B-018).
+This replaces an earlier count-ratio/signal-to-noise formula (ADR-0005), which
+read ~1.0 for obfuscated bundles because obfuscation adds identifiers (K-015,
+K-016). The token unit also means a minified single-line bundle does not collapse
+to one measurement (ADR-0010).
 
 ### Inapplicable axes are skipped
 

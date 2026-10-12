@@ -1,6 +1,6 @@
 # ADR-0005 — Signal-to-noise strings and skip inapplicable axes
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0011
 - **Date:** 2026-10-12
 - **Deciders:** die-a-rea maintainers
 - **Supersedes:** none
