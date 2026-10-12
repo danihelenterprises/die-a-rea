@@ -311,7 +311,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - [Reverse-engineering Resistance Score](docs/RRS.md)
 - [Prior art and upstream projects](docs/PIGGYBACK.md)
 - [Responsible use](docs/ETHICS.md)
-- [Docker toolchain](docker/README.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+- [Docker toolchain](docker/README.md) · [Adapters](docs/ADAPTERS.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 - [Project memory: authority map and doc-sync](docs/README.md) · [working rules](AGENTS.md) · [state & work order](STATE.md)
 
 ---

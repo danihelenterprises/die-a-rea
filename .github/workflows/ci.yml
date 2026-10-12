@@ -62,3 +62,83 @@ jobs:
           docker run --rm -v "$tmp":/work die-a-rea:runtime init --name ci a.js
           docker run --rm -v "$tmp":/work die-a-rea:runtime build --out dist
           docker run --rm -v "$tmp":/work die-a-rea:runtime verify --original a.js --hardened dist/a.js --json
+
+  adapter-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install javascript-obfuscator
+        run: npm install --global javascript-obfuscator@^5
+      - name: JS adapter end-to-end
+        run: |
+          cargo build
+          tmp="$(mktemp -d)"
+          printf 'function f(k){const s="SUPER_SECRET_LICENSE_MAGIC_STRING";return k===s;}\nmodule.exports={f};\n' > "$tmp/app.js"
+          printf '[project]\nname="ci"\nversion="1.0.0"\n[policy]\nprofile="high"\n[randomization]\nenabled=false\n[tarpit]\nenabled=false\n[[targets]]\npath="app.js"\n' > "$tmp/die-a-rea.toml"
+          out="$(cd "$tmp" && DIREA_JS_ADAPTER="$GITHUB_WORKSPACE/adapters/js/direa-js" "$GITHUB_WORKSPACE/target/debug/die-a-rea" build --out dist)"
+          echo "$out"
+          echo "$out" | grep -q "js adapter: Ok"
+          (cd "$tmp" && "$GITHUB_WORKSPACE/target/debug/die-a-rea" verify --original app.js --hardened dist/app.js --json >/dev/null)
+
+  # Optional lanes: heavier toolchains; exercise the adapters with a real tool.
+  adapter-clr:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: .NET adapter smoke
+        run: |
+          cargo build
+          tmp="$(mktemp -d)"
+          dotnet new classlib -o "$tmp/lib" >/dev/null
+          dotnet build "$tmp/lib" -o "$tmp/out" >/dev/null
+          dll="$(find "$tmp/out" -name '*.dll' | head -1)"
+          printf '[project]\nname="ci"\nversion="1.0.0"\n[policy]\nprofile="low"\n[[targets]]\npath="%s"\n' "$dll" > "$tmp/die-a-rea.toml"
+          out="$(cd "$tmp" && DIREA_CLR_ADAPTER="$GITHUB_WORKSPACE/adapters/clr/direa-clr" DIREA_CLR_COMMAND="dotnet --version" "$GITHUB_WORKSPACE/target/debug/die-a-rea" build --out dist)"
+          echo "$out"
+          echo "$out" | grep -q "clr adapter: Ok"
+
+  adapter-jvm:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: JVM adapter smoke
+        run: |
+          cargo build
+          tmp="$(mktemp -d)"
+          printf 'public class App { public static void main(String[] a){} }\n' > "$tmp/App.java"
+          (cd "$tmp" && javac App.java && jar cf app.jar App.class)
+          printf '[project]\nname="ci"\nversion="1.0.0"\n[policy]\nprofile="low"\n[[targets]]\npath="app.jar"\n' > "$tmp/die-a-rea.toml"
+          out="$(cd "$tmp" && DIREA_JVM_ADAPTER="$GITHUB_WORKSPACE/adapters/jvm/direa-jvm" DIREA_JVM_COMMAND="java -version" "$GITHUB_WORKSPACE/target/debug/die-a-rea" build --out dist)"
+          echo "$out"
+          echo "$out" | grep -q "jvm adapter: Ok"
+
+  adapter-llvm:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang
+      - name: LLVM adapter smoke
+        run: |
+          cargo build
+          tmp="$(mktemp -d)"
+          printf 'int main(void){return 0;}\n' > "$tmp/main.c"
+          (cd "$tmp" && clang main.c -o app)
+          printf '[project]\nname="ci"\nversion="1.0.0"\n[policy]\nprofile="low"\n[[targets]]\npath="app"\n' > "$tmp/die-a-rea.toml"
+          out="$(cd "$tmp" && DIREA_LLVM_ADAPTER="$GITHUB_WORKSPACE/adapters/llvm/direa-llvm" DIREA_LLVM_BUILD="clang --version" "$GITHUB_WORKSPACE/target/debug/die-a-rea" build --out dist)"
+          echo "$out"
+          echo "$out" | grep -q "llvm adapter: Ok"

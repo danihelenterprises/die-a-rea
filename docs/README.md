@@ -33,6 +33,7 @@ Every tracked document, what it owns, and its role.
 | `docs/adr/0000-template.md` | ADR template | decisions |
 | `docs/adr/ADR-NNNN.md` | Individual immutable decisions | decisions |
 | `../docker/README.md` | Docker toolchain usage (runtime/dev images) | infra |
+| `docs/ADAPTERS.md` | Adapter discovery, reference adapters, CI lanes | design |
 
 ## Authority map (fact → owner)
 

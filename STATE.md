@@ -122,8 +122,8 @@ to bottom unless a dependency says otherwise.
 | Open backlog items (High) | 0 |
 | Durable lessons (`K-NNN`) | 29 |
 | Decision records (`ADR-NNNN`) | 16 |
-| Markdown docs (tracked) | 35 |
-| Commits in history | 26 |
+| Markdown docs (tracked) | 36 |
+| Commits in history | 27 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -197,3 +197,4 @@ to bottom unless a dependency says otherwise.
   (native embedding). Closed `B-023`.
 - **B-024 (commit 26):** pluggable external detector + broadened corpus (K-029).
   Closed `B-024`.
+- **B-025 (commit 27):** adapter CI lanes + `docs/ADAPTERS.md`. Closed `B-025`.
