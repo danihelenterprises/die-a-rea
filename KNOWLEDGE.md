@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-024 — Mach-O fat containers and `__DWARF` need explicit handling.** `detect`
+must recognise the fat magics (`0xcafebabe`/`0xcafebabf`, both byte orders) or
+fat images fall through as `Unknown`; `strip_macho` then iterates slices, and
+`__DWARF` segment/section data is zeroed with names scrubbed (like ELF). [Evidence:
+`crates/direa-core/src/native_post.rs` (`strip_fat`, `strip_dwarf_segment`);
+tests `macho_fat_slices_are_stripped`, `macho_dwarf_is_scrubbed`] -> New Mach-O
+features must cover thin, fat and `__DWARF`. (ADR-0008)
+
 **K-023 — PE resources are runtime-needed and intentionally preserved.**
 `native_post` strips the PE Rich header fingerprint (build-tool correlation) but
 leaves the resource directory intact — icons, manifests and version info are used

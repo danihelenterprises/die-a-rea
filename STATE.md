@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 66 |
+| Tests (`cargo test --all`) | 68 |
 | Backlog items (`B-NNN`) | 22 |
 | Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 23 |
+| Durable lessons (`K-NNN`) | 24 |
 | Decision records (`ADR-NNNN`) | 15 |
 | Markdown docs (tracked) | 34 |
-| Commits in history | 17 |
+| Commits in history | 18 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -179,3 +179,5 @@ to bottom unless a dependency says otherwise.
   pattern and a `--self-test` in CI. Closed `B-014`.
 - **B-016 (commit 17):** PE Rich header stripped; resources preserved (K-023).
   Closed `B-016`.
+- **B-015 (commit 18):** Mach-O fat containers + `__DWARF` stripping (K-024).
+  Closed `B-015`.

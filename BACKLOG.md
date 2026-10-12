@@ -29,7 +29,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-012 | Declare MSRV (`rust-version`) in the workspace | Low | Build | Closed | `rust-version = "1.79"` in `[workspace.package]`, inherited by every crate; toolchain recorded as K-022. |
 | B-013 | Validate and bound deceptive `agent_decoys` payloads before any default use | Medium | Agent | Open | `docs/ETHICS.md` and ADR-0006 keep deception opt-in; depends on B-009. |
 | B-014 | Strengthen the docs-check counter-duplication heuristic | Low | Tooling | Closed | Fatal by default, broader labels, and `--self-test` (wired into CI). |
-| B-015 | Extend `native-post` to Mach-O DWARF sections and fat containers | Medium | Adapters | Open | `native_post.rs` handles only `LC_SYMTAB`; `__DWARF`/segment names and FAT remain. |
+| B-015 | Extend `native-post` to Mach-O DWARF sections and fat containers | Medium | Adapters | Closed | `strip_fat` iterates slices; `__DWARF` section data zeroed and names scrubbed; `detect` recognises fat magics (K-024). |
 | B-016 | Extend `native-post` to PE resources and the rich header | Low | Adapters | Closed | Rich header fingerprint stripped; resources intentionally preserved as runtime-needed (K-023). |
 | B-017 | Make the `strings` probe token/literal-aware so minified JS scores correctly | High | RRS | Closed | Done: `direa_core::scan::count_tokens` (ADR-0010). A minified line no longer collapses to one sequence. |
 | B-018 | Make the `strings` axis respond to string encoding | High | RRS | Closed | Solved as verbatim survival rather than base64 detection (ADR-0011, K-016): obfuscated JS now scores 0.56. |
@@ -71,3 +71,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   and has a `--self-test` wired into CI.
 - **B-016 (Closed, commit 17):** `native-post` strips the PE Rich header; PE
   resources are preserved deliberately (K-023).
+- **B-015 (Closed, commit 18):** `native-post` handles Mach-O fat containers and
+  `__DWARF` segments (K-024).

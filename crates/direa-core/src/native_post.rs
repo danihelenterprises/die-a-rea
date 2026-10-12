@@ -136,6 +136,11 @@ fn detect(data: &[u8]) -> NativeFormat {
                 | [0xfe, 0xed, 0xfa, 0xce]
                 | [0xcf, 0xfa, 0xed, 0xfe]
                 | [0xfe, 0xed, 0xfa, 0xcf]
+                // Fat / universal containers.
+                | [0xca, 0xfe, 0xba, 0xbe]
+                | [0xbe, 0xba, 0xfe, 0xca]
+                | [0xca, 0xfe, 0xba, 0xbf]
+                | [0xbf, 0xba, 0xfe, 0xca]
         );
         if macho {
             return NativeFormat::MachO;
@@ -519,12 +524,69 @@ fn strip_macho(data: &mut [u8], report: &mut StripReport) -> Result<(), String> 
     if data.len() < 4 {
         return Err("not Mach-O".into());
     }
+    // Fat / universal containers wrap thin Mach-O slices.
+    match &data[0..4] {
+        [0xca, 0xfe, 0xba, 0xbe] => strip_fat(data, report, Endian::Big, false),
+        [0xbe, 0xba, 0xfe, 0xca] => strip_fat(data, report, Endian::Little, false),
+        [0xca, 0xfe, 0xba, 0xbf] => strip_fat(data, report, Endian::Big, true),
+        [0xbf, 0xba, 0xfe, 0xca] => strip_fat(data, report, Endian::Little, true),
+        _ => strip_macho_thin(data, report),
+    }
+}
+
+/// Strip every slice of a fat (universal) Mach-O container.
+fn strip_fat(
+    data: &mut [u8],
+    report: &mut StripReport,
+    e: Endian,
+    is64: bool,
+) -> Result<(), String> {
+    let nfat = e.read32(data, 4).ok_or("fat nfat_arch")? as usize;
+    let arch_size = if is64 { 32 } else { 20 };
+    let mut any = false;
+    for i in 0..nfat {
+        let base = 8 + i * arch_size;
+        let (off, size) = if is64 {
+            (
+                e.read64(data, base + 8).ok_or("fat offset")?,
+                e.read64(data, base + 16).ok_or("fat size")?,
+            )
+        } else {
+            (
+                e.read32(data, base + 8).ok_or("fat offset")? as u64,
+                e.read32(data, base + 12).ok_or("fat size")? as u64,
+            )
+        };
+        let end = match off.checked_add(size) {
+            Some(v) => v,
+            None => continue,
+        };
+        if end as usize > data.len() {
+            continue;
+        }
+        let slice = &mut data[off as usize..end as usize];
+        if strip_macho_thin(slice, report).is_ok() {
+            any = true;
+        }
+    }
+    if any {
+        Ok(())
+    } else {
+        Err("no Mach-O slices could be stripped".into())
+    }
+}
+
+/// Strip one thin Mach-O image: LC_SYMTAB plus `__DWARF` segment contents.
+fn strip_macho_thin(data: &mut [u8], report: &mut StripReport) -> Result<(), String> {
+    if data.len() < 4 {
+        return Err("not Mach-O".into());
+    }
     let (endian, class64) = match &data[0..4] {
         [0xce, 0xfa, 0xed, 0xfe] => (Endian::Little, false),
         [0xfe, 0xed, 0xfa, 0xce] => (Endian::Big, false),
         [0xcf, 0xfa, 0xed, 0xfe] => (Endian::Little, true),
         [0xfe, 0xed, 0xfa, 0xcf] => (Endian::Big, true),
-        _ => return Err("unsupported Mach-O magic (fat/other)".into()),
+        _ => return Err("unsupported Mach-O slice magic".into()),
     };
     let e = endian;
     let header_size = if class64 { 32 } else { 28 };
@@ -542,25 +604,89 @@ fn strip_macho(data: &mut [u8], report: &mut StripReport) -> Result<(), String> 
         if cmdsize < 8 || off + cmdsize > data.len() {
             break;
         }
-        // LC_SYMTAB == 0x2
-        if cmd == 0x2 && cmdsize >= 24 {
-            let symoff = e.read32(data, off + 8).unwrap_or(0) as u64;
-            let nsyms = e.read32(data, off + 12).unwrap_or(0) as u64;
-            let stroff = e.read32(data, off + 16).unwrap_or(0) as u64;
-            let strsize = e.read32(data, off + 20).unwrap_or(0) as u64;
-            let z1 = zero_range(data, symoff, nsyms.saturating_mul(nlist_size));
-            let z2 = zero_range(data, stroff, strsize);
-            if nsyms > 0 || strsize > 0 {
-                e.write32(data, off + 12, 0);
-                e.write32(data, off + 20, 0);
-                report.removed.push("LC_SYMTAB".into());
-                report.bytes_zeroed += z1 + z2;
-                report.changed = true;
+        match cmd {
+            // LC_SYMTAB
+            0x2 if cmdsize >= 24 => {
+                let symoff = e.read32(data, off + 8).unwrap_or(0) as u64;
+                let nsyms = e.read32(data, off + 12).unwrap_or(0) as u64;
+                let stroff = e.read32(data, off + 16).unwrap_or(0) as u64;
+                let strsize = e.read32(data, off + 20).unwrap_or(0) as u64;
+                let z1 = zero_range(data, symoff, nsyms.saturating_mul(nlist_size));
+                let z2 = zero_range(data, stroff, strsize);
+                if nsyms > 0 || strsize > 0 {
+                    e.write32(data, off + 12, 0);
+                    e.write32(data, off + 20, 0);
+                    report.removed.push("LC_SYMTAB".into());
+                    report.bytes_zeroed += z1 + z2;
+                    report.changed = true;
+                }
             }
+            // LC_SEGMENT_64 / LC_SEGMENT whose name is __DWARF
+            0x19 if cmdsize >= 72 => strip_dwarf_segment(data, report, e, off, true),
+            0x1 if cmdsize >= 56 => strip_dwarf_segment(data, report, e, off, false),
+            _ => {}
         }
         off += cmdsize;
     }
     Ok(())
+}
+
+/// Zero the contents and names of a `__DWARF` segment's sections.
+fn strip_dwarf_segment(
+    data: &mut [u8],
+    report: &mut StripReport,
+    e: Endian,
+    off: usize,
+    is64: bool,
+) {
+    let segname = match data.get(off + 8..off + 24) {
+        Some(s) => s,
+        None => return,
+    };
+    if !segname.starts_with(b"__DWARF") {
+        return;
+    }
+    let (nsects_off, sect_start, sect_size) = if is64 {
+        (off + 64, off + 72, 80usize)
+    } else {
+        (off + 48, off + 56, 68usize)
+    };
+    let nsects = e.read32(data, nsects_off).unwrap_or(0) as usize;
+    let mut s = sect_start;
+    for _ in 0..nsects {
+        if s + sect_size > data.len() {
+            break;
+        }
+        if is64 {
+            let size = e.read64(data, s + 40).unwrap_or(0);
+            let soff = e.read32(data, s + 48).unwrap_or(0) as u64;
+            zero_range(data, soff, size);
+            e.write64(data, s + 40, 0);
+            e.write32(data, s + 48, 0);
+        } else {
+            let size = e.read32(data, s + 36).unwrap_or(0) as u64;
+            let soff = e.read32(data, s + 40).unwrap_or(0) as u64;
+            zero_range(data, soff, size);
+            e.write32(data, s + 36, 0);
+            e.write32(data, s + 40, 0);
+        }
+        scrub_name_field(data, s, 16);
+        scrub_name_field(data, s + 16, 16);
+        s += sect_size;
+    }
+    scrub_name_field(data, off + 8, 16);
+    report.note("Mach-O __DWARF", 1);
+}
+
+/// Overwrite a fixed-width name field with spaces (non-token, non-marker).
+fn scrub_name_field(data: &mut [u8], off: usize, len: usize) {
+    if let Some(field) = data.get_mut(off..off + len) {
+        for b in field.iter_mut() {
+            if *b != 0 {
+                *b = b' ';
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -683,6 +809,53 @@ mod tests {
         d
     }
 
+    /// Thin 64-bit Mach-O with one `__DWARF` segment containing `__debug_info`.
+    fn macho_dwarf_fixture() -> Vec<u8> {
+        let mut d = vec![0u8; 0x300];
+        d[0..4].copy_from_slice(&[0xcf, 0xfa, 0xed, 0xfe]); // MH_MAGIC_64 LE
+        put32(&mut d, 4, 0x0100_0007);
+        put32(&mut d, 12, 2); // MH_EXECUTE
+        put32(&mut d, 16, 1); // ncmds
+        put32(&mut d, 20, 72 + 80); // sizeofcmds
+        let lc = 32;
+        put32(&mut d, lc, 0x19); // LC_SEGMENT_64
+        put32(&mut d, lc + 4, 72 + 80);
+        d[lc + 8..lc + 24].copy_from_slice(b"__DWARF\0\0\0\0\0\0\0\0\0");
+        put32(&mut d, lc + 64, 1); // nsects
+        let s = lc + 72;
+        d[s..s + 16].copy_from_slice(b"__debug_info\0\0\0\0");
+        d[s + 16..s + 32].copy_from_slice(b"__DWARF\0\0\0\0\0\0\0\0\0");
+        put64(&mut d, s + 40, 16); // size
+        put32(&mut d, s + 48, 0x200); // offset
+        d[0x200..0x210].copy_from_slice(b"DWARFDEBUGDATA!!");
+        d
+    }
+
+    /// Fat (universal) container with a symtab slice and a DWARF slice.
+    fn macho_fat_fixture() -> Vec<u8> {
+        let slice1 = macho_fixture();
+        let slice2 = macho_dwarf_fixture();
+        let align = |n: usize| (n + 15) & !15;
+        let off1 = align(8 + 2 * 20);
+        let off2 = align(off1 + slice1.len());
+        let total = off2 + slice2.len();
+        let mut d = vec![0u8; total];
+        d[0..4].copy_from_slice(&[0xca, 0xfe, 0xba, 0xbe]); // FAT_MAGIC (BE)
+        d[4..8].copy_from_slice(&2u32.to_be_bytes()); // nfat_arch
+        let arch = |d: &mut [u8], base: usize, off: usize, size: usize| {
+            d[base..base + 4].copy_from_slice(&0x0100_0007u32.to_be_bytes());
+            d[base + 4..base + 8].copy_from_slice(&3u32.to_be_bytes());
+            d[base + 8..base + 12].copy_from_slice(&(off as u32).to_be_bytes());
+            d[base + 12..base + 16].copy_from_slice(&(size as u32).to_be_bytes());
+            d[base + 16..base + 20].copy_from_slice(&4u32.to_be_bytes());
+        };
+        arch(&mut d, 8, off1, slice1.len());
+        arch(&mut d, 28, off2, slice2.len());
+        d[off1..off1 + slice1.len()].copy_from_slice(&slice1);
+        d[off2..off2 + slice2.len()].copy_from_slice(&slice2);
+        d
+    }
+
     // ── tests ─────────────────────────────────────────────────────────────
 
     #[test]
@@ -746,6 +919,40 @@ mod tests {
         let r = strip_symbols(&mut d);
         assert!(r.removed.iter().any(|s| s.contains("Rich header")));
         assert!(find(&d, b"Rich").is_none());
+    }
+
+    #[test]
+    fn macho_dwarf_is_scrubbed() {
+        let mut d = macho_dwarf_fixture();
+        assert!(find(&d, b"__DWARF").is_some());
+        assert!(find(&d, b"__debug_info").is_some());
+        let r = strip_symbols(&mut d);
+        assert_eq!(r.format, NativeFormat::MachO);
+        assert!(r.removed.iter().any(|s| s.contains("__DWARF")));
+        assert!(find(&d, b"__DWARF").is_none());
+        assert!(find(&d, b"__debug_info").is_none());
+        assert!(
+            find(&d, b"DWARFDEBUGDATA").is_none(),
+            "dwarf data must be zeroed"
+        );
+    }
+
+    #[test]
+    fn macho_fat_slices_are_stripped() {
+        let mut d = macho_fat_fixture();
+        assert!(find(&d, b"_secret").is_some());
+        assert!(find(&d, b"__DWARF").is_some());
+        let r = strip_symbols(&mut d);
+        assert_eq!(r.format, NativeFormat::MachO);
+        assert!(r.changed);
+        assert!(
+            find(&d, b"_secret").is_none(),
+            "symtab slice must be stripped"
+        );
+        assert!(
+            find(&d, b"__DWARF").is_none(),
+            "dwarf slice must be stripped"
+        );
     }
 
     #[test]
