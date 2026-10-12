@@ -130,6 +130,13 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-035 — `die-a-rea explain <id>` surfaces the project memory.** It reads
+`KNOWLEDGE.md` (`K-NNN` blocks), `BACKLOG.md` (`B-NNN` rows) and
+`docs/adr/ADR-NNNN-*` from `--root` (default cwd), printing the entry or a coded
+`id_not_found`/`memory_not_found` error. [Evidence: `crates/direa-cli/src/main.rs`
+(`cmd_explain`, `knowledge_block`, `backlog_row`)] -> Keep ids resolvable from the
+memory files; never duplicate entries elsewhere. (Open)
+
 **K-034 — `die-a-rea doctor` reports readiness.** It checks the manifest, each
 registry adapter (resolved via `adapter::env_key`/PATH) and optional tools
 (node, javascript-obfuscator, go/garble, clang, dotnet, r8/proguard, nm/objdump),

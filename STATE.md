@@ -120,10 +120,10 @@ to bottom unless a dependency says otherwise.
 | Tests (`cargo test --all`) | 81 |
 | Backlog items (`B-NNN`) | 31 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 34 |
+| Durable lessons (`K-NNN`) | 35 |
 | Decision records (`ADR-NNNN`) | 18 |
 | Markdown docs (tracked) | 38 |
-| Commits in history | 32 |
+| Commits in history | 33 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -207,3 +207,4 @@ to bottom unless a dependency says otherwise.
   Closed `B-029`.
 - **B-030 (commit 32):** `die-a-rea doctor` readiness command (K-034). Closed
   `B-030`.
+- **B-031 (commit 33):** `die-a-rea explain <id>` (K-035). Closed `B-031`.

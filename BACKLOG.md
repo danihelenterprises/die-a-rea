@@ -30,7 +30,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-028 | CLI verbosity, phase timing, and a transform trace | Medium | Tooling | Closed | `-v`/`-vv`/`-q` with `ui` module and per-phase timing (K-032). |
 | B-029 | Stable error codes and a JSON error envelope | Medium | Tooling | Closed | `DireaError::code()`, coded build refusals, `--error-format json` (K-033). |
 | B-030 | `die-a-rea doctor` readiness command | Medium | Tooling | Closed | `die-a-rea doctor [--json]`; adapter id `android`→`jvm` aligned (K-034). |
-| B-031 | `die-a-rea explain <id>` for K/ADR/B entries | Low | Tooling | Open | Surface the project memory from the CLI. |
+| B-031 | `die-a-rea explain <id>` for K/ADR/B entries | Low | Tooling | Closed | `die-a-rea explain <id> [--root DIR] [--json]` (K-035). |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Closed | `direa_core::canary` (gate/canary/decoy) wired into `build`; detector added under B-009 (K-025). |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Closed | `canary::gauntlet` + `die-a-rea canary-selftest` in CI (K-026). |
 | B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
@@ -106,3 +106,4 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 - **B-029 (Closed, commit 31):** stable error codes + JSON error envelope
   (K-033).
 - **B-030 (Closed, commit 32):** `die-a-rea doctor` (K-034).
+- **B-031 (Closed, commit 33):** `die-a-rea explain <id>` (K-035).

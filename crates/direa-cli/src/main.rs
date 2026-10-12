@@ -62,6 +62,18 @@ enum Command {
     /// List the built-in protection profiles.
     Profiles,
 
+    /// Print a project-memory entry (K-NNN, ADR-NNNN or B-NNN).
+    Explain {
+        /// The id to look up.
+        id: String,
+        /// Repository root containing KNOWLEDGE.md / BACKLOG.md / docs/adr.
+        #[arg(long, default_value = ".")]
+        root: PathBuf,
+        /// Emit machine-readable JSON.
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Report toolchain, adapter and target readiness.
     Doctor {
         /// Emit machine-readable JSON.
@@ -204,6 +216,7 @@ fn run(cli: Cli) -> Result<()> {
         } => cmd_init(&ui, &cli.manifest, name, targets, force),
         Command::Profiles => cmd_profiles(&ui),
         Command::Doctor { json } => cmd_doctor(&ui, &cli.manifest, json),
+        Command::Explain { id, root, json } => cmd_explain(&ui, &root, &id, json),
         Command::CanarySelftest { detector, json } => cmd_canary_selftest(&ui, detector, json),
         Command::Plan { json } => cmd_plan(&ui, &cli.manifest, json),
         Command::Build {
@@ -292,6 +305,115 @@ fn cmd_profiles(ui: &Ui) -> Result<()> {
                 "notice"
             },
         ));
+    }
+    Ok(())
+}
+
+#[derive(serde::Serialize)]
+struct ExplainEntry {
+    id: String,
+    kind: String,
+    text: String,
+}
+
+fn explain_not_found(id: &str) -> anyhow::Error {
+    direa_core::DireaError::Refused {
+        code: "id_not_found",
+        message: format!("no project-memory entry for '{id}'"),
+    }
+    .into()
+}
+
+fn read_memory(root: &Path, name: &str) -> Result<String> {
+    let path = root.join(name);
+    std::fs::read_to_string(&path).map_err(|_| {
+        direa_core::DireaError::Refused {
+            code: "memory_not_found",
+            message: format!(
+                "{} not found; run from the die-a-rea repository or pass --root",
+                path.display()
+            ),
+        }
+        .into()
+    })
+}
+
+fn knowledge_block(text: &str, id: &str) -> Option<String> {
+    let marker = format!("**{id}");
+    let mut block = Vec::new();
+    let mut collecting = false;
+    for line in text.lines() {
+        if line.starts_with(&marker) {
+            collecting = true;
+        } else if collecting && line.starts_with("**") {
+            break;
+        }
+        if collecting {
+            block.push(line);
+        }
+    }
+    let joined = block.join("\n").trim().to_string();
+    if joined.is_empty() {
+        None
+    } else {
+        Some(joined)
+    }
+}
+
+fn backlog_row(text: &str, id: &str) -> Option<String> {
+    let needle = format!("| {id} |");
+    text.lines()
+        .find(|l| l.starts_with(&needle))
+        .map(|l| l.trim().to_string())
+}
+
+fn cmd_explain(ui: &Ui, root: &Path, id: &str, json: bool) -> Result<()> {
+    let id = id.to_ascii_uppercase();
+    let (kind, text) = if id.starts_with("K-") {
+        let md = read_memory(root, "KNOWLEDGE.md")?;
+        (
+            "knowledge",
+            knowledge_block(&md, &id).ok_or_else(|| explain_not_found(&id))?,
+        )
+    } else if id.starts_with("ADR-") {
+        let dir = root.join("docs/adr");
+        let prefix = format!("{id}-");
+        let found = std::fs::read_dir(&dir).ok().and_then(|rd| {
+            rd.flatten().find(|e| {
+                e.file_name()
+                    .to_string_lossy()
+                    .to_ascii_uppercase()
+                    .starts_with(&prefix)
+            })
+        });
+        let path = found
+            .map(|e| e.path())
+            .ok_or_else(|| explain_not_found(&id))?;
+        let content = std::fs::read_to_string(&path)
+            .with_context(|| format!("reading {}", path.display()))?;
+        ("adr", content.trim().to_string())
+    } else if id.starts_with("B-") {
+        let md = read_memory(root, "BACKLOG.md")?;
+        (
+            "backlog",
+            backlog_row(&md, &id).ok_or_else(|| explain_not_found(&id))?,
+        )
+    } else {
+        return Err(direa_core::DireaError::Refused {
+            code: "unknown_id",
+            message: format!("'{id}' is not a K-NNN, ADR-NNNN or B-NNN id"),
+        }
+        .into());
+    };
+
+    if json {
+        ui.out(serde_json::to_string_pretty(&ExplainEntry {
+            id,
+            kind: kind.to_string(),
+            text,
+        })?);
+    } else {
+        ui.out(format!("{kind} {id}\n{text}"));
     }
     Ok(())
 }
