@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-034 — `die-a-rea doctor` reports readiness.** It checks the manifest, each
+registry adapter (resolved via `adapter::env_key`/PATH) and optional tools
+(node, javascript-obfuscator, go/garble, clang, dotnet, r8/proguard, nm/objdump),
+human or `--json`. Adapter ids must match their script and env key (the Android
+adapter id is `jvm` → `DIREA_JVM_ADAPTER`/`direa-jvm`). [Evidence:
+`crates/direa-cli/src/main.rs` (`cmd_doctor`); `crates/direa-core/src/planner.rs`]
+-> Keep adapter id, command and env key consistent. (Open)
+
 **K-033 — Errors carry stable codes; the CLI prints them.** `DireaError::code()`
 returns a stable string (e.g. `manifest_parse`, `output_over_source`); build
 safety refusals use `DireaError::Refused { code, message }`. The CLI reports

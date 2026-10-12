@@ -120,10 +120,10 @@ to bottom unless a dependency says otherwise.
 | Tests (`cargo test --all`) | 81 |
 | Backlog items (`B-NNN`) | 31 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 33 |
+| Durable lessons (`K-NNN`) | 34 |
 | Decision records (`ADR-NNNN`) | 18 |
 | Markdown docs (tracked) | 38 |
-| Commits in history | 31 |
+| Commits in history | 32 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -205,3 +205,5 @@ to bottom unless a dependency says otherwise.
 - **B-028 (commit 30):** CLI verbosity/timing/trace (K-032); opened B-029..B-031.
 - **B-029 (commit 31):** stable error codes + JSON error envelope (K-033).
   Closed `B-029`.
+- **B-030 (commit 32):** `die-a-rea doctor` readiness command (K-034). Closed
+  `B-030`.

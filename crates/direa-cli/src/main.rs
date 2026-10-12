@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
@@ -61,6 +61,13 @@ enum Command {
 
     /// List the built-in protection profiles.
     Profiles,
+
+    /// Report toolchain, adapter and target readiness.
+    Doctor {
+        /// Emit machine-readable JSON.
+        #[arg(long)]
+        json: bool,
+    },
 
     /// Run the agent-defense detector gauntlet (CI-friendly; exits non-zero on failure).
     CanarySelftest {
@@ -196,6 +203,7 @@ fn run(cli: Cli) -> Result<()> {
             force,
         } => cmd_init(&ui, &cli.manifest, name, targets, force),
         Command::Profiles => cmd_profiles(&ui),
+        Command::Doctor { json } => cmd_doctor(&ui, &cli.manifest, json),
         Command::CanarySelftest { detector, json } => cmd_canary_selftest(&ui, detector, json),
         Command::Plan { json } => cmd_plan(&ui, &cli.manifest, json),
         Command::Build {
@@ -284,6 +292,97 @@ fn cmd_profiles(ui: &Ui) -> Result<()> {
                 "notice"
             },
         ));
+    }
+    Ok(())
+}
+
+#[derive(serde::Serialize)]
+struct DoctorCheck {
+    name: String,
+    detail: String,
+    ok: bool,
+}
+
+#[derive(serde::Serialize)]
+struct DoctorReport {
+    platform: String,
+    checks: Vec<DoctorCheck>,
+}
+
+fn cmd_doctor(ui: &Ui, manifest_path: &Path, json: bool) -> Result<()> {
+    let mut checks = vec![DoctorCheck {
+        name: "manifest".into(),
+        detail: manifest_path.display().to_string(),
+        ok: manifest_path.exists(),
+    }];
+
+    for entry in direa_core::planner::default_registry()
+        .iter()
+        .filter(|e| !e.builtin)
+    {
+        let key = direa_core::adapter::env_key(&entry.id);
+        let via_env = std::env::var(&key).ok().filter(|v| !v.trim().is_empty());
+        let via_path = direa_core::which(&entry.command);
+        let ok = via_env.is_some() || via_path.is_some();
+        let detail = if let Some(v) = via_env {
+            format!("{key}={v}")
+        } else if let Some(p) = via_path {
+            p.display().to_string()
+        } else {
+            format!("set {key} or add `{}` to PATH", entry.command)
+        };
+        checks.push(DoctorCheck {
+            name: format!("adapter:{}", entry.id),
+            detail,
+            ok,
+        });
+    }
+
+    for tool in [
+        "sh",
+        "node",
+        "npm",
+        "javascript-obfuscator",
+        "go",
+        "garble",
+        "clang",
+        "dotnet",
+        "r8",
+        "proguard",
+        "nm",
+        "objdump",
+        "llvm-nm",
+    ] {
+        let ok = direa_core::which(tool).is_some();
+        checks.push(DoctorCheck {
+            name: format!("tool:{tool}"),
+            detail: if ok {
+                "found".into()
+            } else {
+                "absent (optional)".into()
+            },
+            ok,
+        });
+    }
+
+    let report = DoctorReport {
+        platform: format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH),
+        checks,
+    };
+    if json {
+        ui.out(serde_json::to_string_pretty(&report)?);
+    } else {
+        ui.out(format!("platform: {}", report.platform));
+        for c in &report.checks {
+            ui.out(format!(
+                "  {} {:<24} {}",
+                if c.ok { "ok" } else { "--" },
+                c.name,
+                c.detail
+            ));
+        }
+        let ready = report.checks.iter().filter(|c| c.ok).count();
+        ui.out(format!("{ready}/{} checks ok", report.checks.len()));
     }
     Ok(())
 }

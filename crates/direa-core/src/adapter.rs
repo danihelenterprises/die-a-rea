@@ -154,6 +154,14 @@ impl AdapterEntry {
     }
 }
 
+/// Environment override for an adapter's executable, e.g. `js` -> `DIREA_JS_ADAPTER`.
+pub fn env_key(id: &str) -> String {
+    format!(
+        "DIREA_{}_ADAPTER",
+        id.to_ascii_uppercase().replace('-', "_")
+    )
+}
+
 /// Resolve an executable on `PATH` without pulling in an extra dependency.
 pub fn which(cmd: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
@@ -250,6 +258,13 @@ mod tests {
             builtin: true,
         };
         assert!(entry.available());
+    }
+
+    #[test]
+    fn env_keys_are_derived() {
+        assert_eq!(env_key("js"), "DIREA_JS_ADAPTER");
+        assert_eq!(env_key("jvm-android"), "DIREA_JVM_ANDROID_ADAPTER");
+        assert_eq!(env_key("llvm"), "DIREA_LLVM_ADAPTER");
     }
 
     #[test]

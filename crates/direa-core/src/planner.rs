@@ -187,7 +187,7 @@ pub fn default_registry() -> Vec<AdapterEntry> {
         ),
         external("clr", "direa-clr", vec![TargetKind::DotNet]),
         external("wasm", "direa-wasm", vec![TargetKind::Wasm]),
-        external("android", "direa-jvm", vec![TargetKind::AndroidApk]),
+        external("jvm", "direa-jvm", vec![TargetKind::AndroidApk]),
         external("llvm", "direa-llvm", native_kinds.clone()),
         external("go", "direa-go", vec![TargetKind::Go]),
     ]

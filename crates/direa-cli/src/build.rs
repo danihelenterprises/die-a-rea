@@ -355,13 +355,7 @@ fn token_runs(bytes: &[u8]) -> u64 {
     direa_core::scan::count_tokens(bytes, direa_core::scan::DEFAULT_MIN_TOKEN)
 }
 
-/// Environment override for an adapter's executable, e.g. `js` -> `DIREA_JS_ADAPTER`.
-fn adapter_env_key(id: &str) -> String {
-    format!(
-        "DIREA_{}_ADAPTER",
-        id.to_ascii_uppercase().replace('-', "_")
-    )
-}
+use direa_core::adapter::env_key as adapter_env_key;
 
 /// Resolve an external adapter: env override first, then its command on `PATH`.
 fn resolve_adapter(id: &str, command: &str) -> Option<AdapterEntry> {
@@ -1145,13 +1139,6 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
             .contains("__DIREA_GUARD__"));
 
         let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn adapter_env_key_is_derived() {
-        assert_eq!(adapter_env_key("js"), "DIREA_JS_ADAPTER");
-        assert_eq!(adapter_env_key("jvm-android"), "DIREA_JVM_ANDROID_ADAPTER");
-        assert_eq!(adapter_env_key("llvm"), "DIREA_LLVM_ADAPTER");
     }
 
     #[test]
