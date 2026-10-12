@@ -120,10 +120,10 @@ to bottom unless a dependency says otherwise.
 | Tests (`cargo test --all`) | 79 |
 | Backlog items (`B-NNN`) | 27 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 29 |
-| Decision records (`ADR-NNNN`) | 16 |
-| Markdown docs (tracked) | 36 |
-| Commits in history | 27 |
+| Durable lessons (`K-NNN`) | 30 |
+| Decision records (`ADR-NNNN`) | 17 |
+| Markdown docs (tracked) | 37 |
+| Commits in history | 28 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -198,3 +198,5 @@ to bottom unless a dependency says otherwise.
 - **B-024 (commit 26):** pluggable external detector + broadened corpus (K-029).
   Closed `B-024`.
 - **B-025 (commit 27):** adapter CI lanes + `docs/ADAPTERS.md`. Closed `B-025`.
+- **B-026 (commit 28):** external decompiler control-flow axis; proxy removed
+  (ADR-0017, K-030). Closed `B-026`.

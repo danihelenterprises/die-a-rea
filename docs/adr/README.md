@@ -32,5 +32,6 @@ file, id `ADR-NNNN`, never reused.
 | [ADR-0014](ADR-0014-runtime-instrumentation-measured-from-environment.md) | Runtime instrumentation is measured from the environment | Accepted |
 | [ADR-0015](ADR-0015-docker-toolchain.md) | Ship a Docker toolchain | Accepted |
 | [ADR-0016](ADR-0016-bound-deceptive-decoys.md) | Deceptive decoys are opt-in, bounded, and gauntlet-validated | Accepted |
+| [ADR-0017](ADR-0017-control-flow-axis-is-external.md) | The control-flow axis requires an external decompiler | Accepted |
 
 Template: [0000-template.md](0000-template.md).

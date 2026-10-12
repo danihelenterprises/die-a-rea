@@ -21,7 +21,7 @@ not affect the score.
 | `symbol-exposure` | 1.0 | symbol/relocation section markers (`nm` proxy) |
 | `debug-metadata-exposure` | 0.8 | DWARF/PDB markers (boolean) |
 | `source-map-exposure` | 1.2 | `*.map`, `sourceMappingURL`, `sourcesContent` |
-| `control-flow-exposure` | 1.5 | x86 function-prologue signatures |
+| `control-flow-exposure` | 1.5 | external decompiler (`--decompiler`; skipped when unset, ADR-0017) |
 | `analysis-noise` | 1.5 | injected decoy/tarpit fraction (from build metadata) |
 | `runtime-instrumentation-exposure` | 1.0 | environment instrumentation (`--with-runtime`; skipped when clean, ADR-0014) |
 | `agent-deception` | 2.0 | REA adversary / canary layer (experimental) |

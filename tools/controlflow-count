@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#
+# tools/controlflow-count — reference probe for the control-flow axis.
+#
+# Prints an integer count of recoverable functions in a native artifact, using
+# real tooling (nm / llvm-nm / objdump). Wire it into verify:
+#
+#   die-a-rea verify --original app --hardened dist/app \
+#       --decompiler "tools/controlflow-count {artifact}"
+#
+# This is a disassembler-based count, not a full decompiler; it is honest about
+# what it measures (ADR-0017).
+set -euo pipefail
+
+artifact="${1:-}"
+if [ -z "$artifact" ] || [ ! -e "$artifact" ]; then
+  printf 'usage: controlflow-count <artifact>\n' >&2
+  exit 2
+fi
+
+count=0
+if command -v llvm-nm >/dev/null 2>&1; then
+  count="$(llvm-nm "$artifact" 2>/dev/null | grep -Ec ' [tT] ' || true)"
+elif command -v nm >/dev/null 2>&1; then
+  count="$(nm "$artifact" 2>/dev/null | grep -Ec ' [tT] ' || true)"
+elif command -v objdump >/dev/null 2>&1; then
+  count="$(objdump -d "$artifact" 2>/dev/null | grep -Ec '^[0-9a-f]+ <' || true)"
+fi
+
+printf '%s\n' "${count:-0}"

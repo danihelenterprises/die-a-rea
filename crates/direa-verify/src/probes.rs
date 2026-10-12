@@ -247,18 +247,16 @@ fn count_extension(dir: &Path, ext: &str) -> usize {
     count
 }
 
-/// Counts x86 function-prologue signatures as a proxy for how many function
-/// boundaries a decompiler can cleanly recover. Flattening/obfuscation tends to
-/// reduce clear prologues.
-pub struct ControlFlowProbe;
+/// Measures recoverable control flow with an external decompiler/disassembler
+/// command (`{artifact}` is substituted). There is no built-in proxy: without a
+/// configured tool the control-flow axis is **skipped**, not fabricated
+/// (ADR-0017, K-004). The command must print an integer count of recoverable
+/// functions (see `tools/controlflow-count`).
+pub struct ExternalControlFlowProbe {
+    pub command: String,
+}
 
-const X86_PROLOGUES: &[&[u8]] = &[
-    &[0x55, 0x48, 0x89, 0xe5], // push rbp; mov rbp, rsp (x86-64)
-    &[0x55, 0x89, 0xe5],       // push ebp; mov ebp, esp (x86)
-    &[0x48, 0x83, 0xec],       // sub rsp, imm8 (stack frame)
-];
-
-impl Probe for ControlFlowProbe {
+impl Probe for ExternalControlFlowProbe {
     fn name(&self) -> &'static str {
         "control-flow"
     }
@@ -269,17 +267,29 @@ impl Probe for ControlFlowProbe {
         ProbeKind::Count
     }
     fn measure(&self, target: &Path) -> Result<ProbeReading, String> {
-        let blobs = collect_bytes(target)?;
-        let mut count = 0usize;
-        for bytes in &blobs {
-            for sig in X86_PROLOGUES {
-                count += count_occurrences(bytes, sig);
-            }
+        let cmd = self
+            .command
+            .replace("{artifact}", &target.display().to_string());
+        let output = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&cmd)
+            .output()
+            .map_err(|e| format!("spawning decompiler command failed: {e}"))?;
+        if !output.status.success() {
+            return Err(format!(
+                "decompiler command failed: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            ));
         }
+        let text = String::from_utf8_lossy(&output.stdout);
+        let count = text
+            .split_whitespace()
+            .find_map(|t| t.parse::<i64>().ok())
+            .ok_or_else(|| "no integer count in decompiler output".to_string())?;
         Ok(ProbeReading {
             axis: self.axis(),
-            raw: count as f64,
-            detail: format!("{count} x86 function-prologue signatures"),
+            raw: count.max(0) as f64,
+            detail: format!("{count} recoverable functions (external)"),
         })
     }
 }
@@ -306,14 +316,14 @@ pub fn rea_js_target(target: &Path) -> Option<PathBuf> {
         .then(|| target.to_path_buf())
 }
 
-/// All default probes, in report order.
+/// All default probes, in report order. The control-flow axis is intentionally
+/// absent: it requires an external decompiler (ADR-0017).
 pub fn default_probes() -> Vec<Box<dyn Probe>> {
     vec![
         Box::new(StringProbe),
         Box::new(SymbolProbe),
         Box::new(DebugInfoProbe),
         Box::new(SourceMapProbe),
-        Box::new(ControlFlowProbe),
     ]
 }
 
@@ -367,12 +377,23 @@ mod tests {
     }
 
     #[test]
-    fn prologue_detection() {
-        let p = temp_file(
-            "cf.bin",
-            &[0x55, 0x48, 0x89, 0xe5, 0x90, 0x55, 0x48, 0x89, 0xe5],
-        );
-        assert_eq!(ControlFlowProbe.measure(&p).unwrap().raw, 2.0);
-        let _ = std::fs::remove_file(p);
+    fn external_control_flow_reads_a_count() {
+        let target = temp_file("cf.bin", b"x");
+        let ok = ExternalControlFlowProbe {
+            command: "printf 10".into(),
+        };
+        assert_eq!(ok.measure(&target).unwrap().raw, 10.0);
+
+        let bad = ExternalControlFlowProbe {
+            command: "printf notanumber".into(),
+        };
+        assert!(bad.measure(&target).is_err());
+
+        let fail = ExternalControlFlowProbe {
+            command: "false".into(),
+        };
+        assert!(fail.measure(&target).is_err());
+
+        let _ = std::fs::remove_file(target);
     }
 }

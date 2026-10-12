@@ -25,7 +25,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-023 | Embed the runtime guard into artifacts (not just the environment) | Medium | Runtime | Closed | Behavior-safe JS/Electron guard injected when `anti_instrumentation` is set (K-028); native embedding tracked as B-027. |
 | B-024 | Pluggable/external detector behind the gauntlet; broaden the corpus | Medium | Agent | Closed | `canary::gauntlet_with` + `canary-selftest --detector`; corpus broadened to 7 styles (K-029). |
 | B-025 | Real-toolchain CI lanes for the adapters (Pluto/ConfuserEx/R8) as optional jobs | Low | Tooling | Closed | `adapter-js` (real) plus optional `adapter-clr`/`adapter-jvm`/`adapter-llvm` jobs; documented in `docs/ADAPTERS.md`. |
-| B-026 | Real control-flow probe (decompiler-based) instead of the x86-prologue proxy | Medium | RRS | Open | Make the control-flow axis external/opt-in; skip when unconfigured. |
+| B-026 | Real control-flow probe (decompiler-based) instead of the x86-prologue proxy | Medium | RRS | Closed | `ExternalControlFlowProbe` via `verify --decompiler`; proxy removed; axis skipped when unset (ADR-0017, K-030). |
 | B-027 | Embed the runtime guard into native artifacts | Low | Runtime | Open | Requires a linked guard library (C/Rust); JS embedding is done (B-023). |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Closed | `direa_core::canary` (gate/canary/decoy) wired into `build`; detector added under B-009 (K-025). |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Closed | `canary::gauntlet` + `die-a-rea canary-selftest` in CI (K-026). |
@@ -93,3 +93,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 - **B-024 (Closed, commit 26):** external detector hook + broader corpus
   (K-029).
 - **B-025 (Closed, commit 27):** real-toolchain CI lanes + `docs/ADAPTERS.md`.
+- **B-026 (Closed, commit 28):** external decompiler-based control-flow axis
+  (ADR-0017, K-030).

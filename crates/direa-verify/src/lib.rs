@@ -11,6 +11,6 @@ pub mod runtime;
 
 pub use harness::{measure, run, ReaObservation, VerifyOptions, VerifyRun};
 pub use probes::{
-    default_probes, ControlFlowProbe, DebugInfoProbe, Probe, ProbeKind, ProbeReading,
+    default_probes, DebugInfoProbe, ExternalControlFlowProbe, Probe, ProbeKind, ProbeReading,
     SourceMapProbe, StringProbe, SymbolProbe,
 };

@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-030 — The control-flow axis is external and opt-in.** It is no longer a
+default probe (the x86-prologue proxy is gone); `verify --decompiler "<cmd>"`
+adds `ExternalControlFlowProbe`, which reads an integer function count from the
+command's stdout, and the axis is skipped when unconfigured. [Evidence:
+`crates/direa-verify/src/probes.rs` (`ExternalControlFlowProbe`); `harness.rs`;
+`tools/controlflow-count`] -> Never reintroduce a byte-signature proxy for this
+axis. (ADR-0017)
+
 **K-029 — The gauntlet accepts an external detector.** `canary::gauntlet_with`
 takes an optional `Fn(&str) -> bool`; a sample counts as detected if the built-in
 regex detector **or** the external hook flags it. `die-a-rea canary-selftest

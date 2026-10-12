@@ -31,6 +31,9 @@ pub struct VerifyOptions {
     /// Extra instrumentation signatures (e.g. `[runtime]
     /// instrumentation_signatures`). Empty uses the built-in defaults.
     pub signatures: Vec<String>,
+    /// External decompiler/disassembler command for the control-flow axis
+    /// (`{artifact}` substituted). When absent the axis is skipped (ADR-0017).
+    pub decompiler: Option<String>,
 }
 
 impl VerifyOptions {
@@ -49,6 +52,7 @@ impl VerifyOptions {
             build_meta: None,
             with_runtime: false,
             signatures: Vec::new(),
+            decompiler: None,
         }
     }
 }
@@ -78,7 +82,12 @@ pub fn run(opts: &VerifyOptions) -> Result<VerifyRun, String> {
         return Err(format!("hardened not found: {}", opts.hardened.display()));
     }
     let meta = load_build_meta(opts);
-    let probes = default_probes();
+    let mut probes = default_probes();
+    if let Some(command) = &opts.decompiler {
+        probes.push(Box::new(crate::probes::ExternalControlFlowProbe {
+            command: command.clone(),
+        }));
+    }
     let (mut measurements, mut notes) =
         measure(&opts.original, &opts.hardened, &probes, meta.as_ref());
     if meta.is_none() {
