@@ -122,8 +122,8 @@ to bottom unless a dependency says otherwise.
 | Open backlog items (High) | 1 |
 | Durable lessons (`K-NNN`) | 22 |
 | Decision records (`ADR-NNNN`) | 15 |
-| Markdown docs (tracked) | 32 |
-| Commits in history | 13 |
+| Markdown docs (tracked) | 34 |
+| Commits in history | 14 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -171,3 +171,5 @@ to bottom unless a dependency says otherwise.
   K-021). Closed `B-022`.
 - **B-012 (commit 13):** declared MSRV 1.79 workspace-wide (K-022). Closed
   `B-012`.
+- **B-011 (commit 14):** added `CONTRIBUTING.md` and `CHANGELOG.md`. Closed
+  `B-011`.

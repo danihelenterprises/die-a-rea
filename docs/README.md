@@ -18,6 +18,8 @@ Every tracked document, what it owns, and its role.
 | `../KNOWLEDGE.md` | Durable lessons (`K-NNN`) | knowledge |
 | `../BACKLOG.md` | Open-problem registry (`B-NNN`) | backlog |
 | `../README.md` | User-facing overview and pitch | overview |
+| `../CONTRIBUTING.md` | How to contribute (setup, checks, workflow) | meta |
+| `../CHANGELOG.md` | Notable changes per release | meta |
 | `docs/README.md` | Authority map and doc-sync checklist (this file) | meta |
 | `docs/CONTINUATION.md` | Reusable fresh-agent handoff prompt | meta |
 | `docs/THREAT-MODEL.md` | Adversary, assets, trust boundaries, non-goals | design |

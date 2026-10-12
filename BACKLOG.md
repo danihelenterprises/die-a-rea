@@ -25,7 +25,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Open | README Roadmap; `agent_decoys` today only injects comments/strings. |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Open | README Roadmap; depends on B-008. |
 | B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
-| B-011 | Add `CONTRIBUTING.md` and `CHANGELOG.md` | Low | Docs | Open | Neither file exists. |
+| B-011 | Add `CONTRIBUTING.md` and `CHANGELOG.md` | Low | Docs | Closed | Both added and indexed in `docs/README.md`. |
 | B-012 | Declare MSRV (`rust-version`) in the workspace | Low | Build | Closed | `rust-version = "1.79"` in `[workspace.package]`, inherited by every crate; toolchain recorded as K-022. |
 | B-013 | Validate and bound deceptive `agent_decoys` payloads before any default use | Medium | Agent | Open | `docs/ETHICS.md` and ADR-0006 keep deception opt-in; depends on B-009. |
 | B-014 | Strengthen the docs-check counter-duplication heuristic | Low | Tooling | Open | `tools/docs-check.sh` check 5 is best-effort (see STATE). |
@@ -64,3 +64,4 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   fail-fast entrypoint and compose file (ADR-0015, K-021).
 - **B-012 (Closed, commit 13):** declared MSRV 1.79 across the workspace
   (K-022).
+- **B-011 (Closed, commit 14):** added `CONTRIBUTING.md` and `CHANGELOG.md`.
