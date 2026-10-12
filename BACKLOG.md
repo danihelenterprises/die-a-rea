@@ -26,7 +26,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Open | README Roadmap; depends on B-008. |
 | B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
 | B-011 | Add `CONTRIBUTING.md` and `CHANGELOG.md` | Low | Docs | Open | Neither file exists. |
-| B-012 | Declare MSRV (`rust-version`) in the workspace | Low | Build | Open | `Cargo.toml` has no `rust-version`; CI pins `stable`. |
+| B-012 | Declare MSRV (`rust-version`) in the workspace | Low | Build | Closed | `rust-version = "1.79"` in `[workspace.package]`, inherited by every crate; toolchain recorded as K-022. |
 | B-013 | Validate and bound deceptive `agent_decoys` payloads before any default use | Medium | Agent | Open | `docs/ETHICS.md` and ADR-0006 keep deception opt-in; depends on B-009. |
 | B-014 | Strengthen the docs-check counter-duplication heuristic | Low | Tooling | Open | `tools/docs-check.sh` check 5 is best-effort (see STATE). |
 | B-015 | Extend `native-post` to Mach-O DWARF sections and fat containers | Medium | Adapters | Open | `native_post.rs` handles only `LC_SYMTAB`; `__DWARF`/segment names and FAT remain. |
@@ -62,3 +62,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   signatures not yet consumed).
 - **B-022 (Closed, commit 12):** Docker toolchain — runtime/dev images plus a
   fail-fast entrypoint and compose file (ADR-0015, K-021).
+- **B-012 (Closed, commit 13):** declared MSRV 1.79 across the workspace
+  (K-022).

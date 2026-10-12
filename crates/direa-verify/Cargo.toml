@@ -2,6 +2,7 @@
 name = "direa-verify"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Resistance-measurement harness for die-a-rea: probes an artifact before and after hardening and produces a Reverse-engineering Resistance Score."

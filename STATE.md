@@ -120,10 +120,10 @@ to bottom unless a dependency says otherwise.
 | Tests (`cargo test --all`) | 64 |
 | Backlog items (`B-NNN`) | 22 |
 | Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 21 |
+| Durable lessons (`K-NNN`) | 22 |
 | Decision records (`ADR-NNNN`) | 15 |
 | Markdown docs (tracked) | 32 |
-| Commits in history | 12 |
+| Commits in history | 13 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -169,3 +169,5 @@ to bottom unless a dependency says otherwise.
 - **B-022 (commit 12):** Docker toolchain (`docker/Dockerfile` runtime/dev
   targets, fail-fast `entrypoint.sh`, `compose.yml`), wired into CI (ADR-0015,
   K-021). Closed `B-022`.
+- **B-012 (commit 13):** declared MSRV 1.79 workspace-wide (K-022). Closed
+  `B-012`.

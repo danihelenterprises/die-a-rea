@@ -130,6 +130,12 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-022 — MSRV is 1.79; the exercised toolchain is 1.96.1.** `std::path::absolute`
+(used by `build`'s output guard) stabilised in Rust 1.79, which sets the floor;
+CI pins `stable`. [Evidence: `Cargo.toml` (`rust-version = "1.79"`); `rustc
+1.96.1` exercised locally] -> Raise the MSRV only with a reason, and keep
+`rust-version.workspace = true` on every crate. (Open)
+
 **K-021 — The container's JS adapter needs `NODE_PATH`; the entrypoint must not
 call `fail` inside `$(…)`.** `javascript-obfuscator` is installed globally in the
 images, so `NODE_PATH` must point at the global `node_modules` for `direa-js` to
