@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-026 — The canary gauntlet is the detector's regression test.** `canary::gauntlet`
+runs `detect_injection` over a fixed adversarial corpus (must all be caught) and
+over our own gate/decoy payloads (must not be flagged); `die-a-rea canary-selftest`
+exposes it and CI runs it. [Evidence: `crates/direa-core/src/canary.rs`
+(`gauntlet`, test `gauntlet_passes_and_payloads_are_clean`); `main.rs`
+`cmd_canary_selftest`] -> Extend the corpus when new injection styles appear; keep
+`passed` fatal. (ADR-0006)
+
 **K-025 — Agent-layer content lives in `direa_core::canary`.** `gate_text`,
 `canary_token`, `decoy_analysis` and `detect_injection` are the single home for
 the authorization gate, traceable tokens, opt-in decoy text (bounded by

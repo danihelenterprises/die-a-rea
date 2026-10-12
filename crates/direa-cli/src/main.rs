@@ -41,6 +41,13 @@ enum Command {
     /// List the built-in protection profiles.
     Profiles,
 
+    /// Run the agent-defense detector gauntlet (CI-friendly; exits non-zero on failure).
+    CanarySelftest {
+        /// Emit machine-readable JSON.
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Show the hardening plan for the manifest (no side effects).
     Plan {
         /// Emit machine-readable JSON.
@@ -125,6 +132,7 @@ fn main() -> Result<()> {
             force,
         } => cmd_init(&cli.manifest, name, targets, force),
         Command::Profiles => cmd_profiles(),
+        Command::CanarySelftest { json } => cmd_canary_selftest(json),
         Command::Plan { json } => cmd_plan(&cli.manifest, json),
         Command::Build {
             out,
@@ -202,6 +210,27 @@ fn cmd_profiles() -> Result<()> {
                 "notice"
             },
         );
+    }
+    Ok(())
+}
+
+fn cmd_canary_selftest(json: bool) -> Result<()> {
+    let report = direa_core::canary::gauntlet();
+    if json {
+        println!("{}", serde_json::to_string_pretty(&report)?);
+    } else {
+        println!(
+            "adversarial detected: {}/{}",
+            report.adversarial_detected, report.adversarial_total
+        );
+        println!(
+            "own payloads flagged: {}/{}",
+            report.payload_flagged, report.payload_total
+        );
+        println!("{}", if report.passed { "PASS" } else { "FAIL" });
+    }
+    if !report.passed {
+        bail!("canary gauntlet failed: the detector missed adversarial samples");
     }
     Ok(())
 }

@@ -24,6 +24,8 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
       - name: Test
         run: cargo test --all
+      - name: Canary gauntlet
+        run: cargo build && ./target/debug/die-a-rea canary-selftest
       - name: Smoke
         run: |
           cargo build

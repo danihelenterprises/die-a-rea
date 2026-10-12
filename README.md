@@ -289,6 +289,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - Built-in `native-post`: in-process symbol/debug/build-metadata stripping for ELF/PE/Mach-O, plus Go build-info/ID scrubbing (ADR-0008, K-019).
 - JavaScript adapter: external `direa-js` (javascript-obfuscator) runs over hardened JS/Electron output when installed (ADR-0009).
 - Runtime guard: `direa_core::guard` detects debuggers/Frida/inspectors; `verify --with-runtime` scores it (ADR-0014).
+- Agent-defense gauntlet: `die-a-rea canary-selftest` runs the prompt-injection detector over an adversarial corpus and our own payloads (ADR-0006).
 - Seeded randomization: decoy functions/strings/files, depth bombs, reproducible via `--seed`.
 - Tarpits: bounded padding, honeypots, honest prompt gate, optional custom payloads.
 - Build-metadata sidecar enabling decoy-aware verification.

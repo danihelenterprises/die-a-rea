@@ -23,7 +23,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-021 | Honor `[runtime] instrumentation_signatures` in the guard | Low | Runtime | Closed | `guard::detect_with` + `verify` reads the manifest list (empty = built-in defaults). |
 | B-022 | Docker toolchain (runtime + dev images) with robust error handling | Medium | Tooling | Closed | `docker/Dockerfile` (build/runtime/dev), `entrypoint.sh` (fail-fast), `compose.yml` (ADR-0015, K-021). |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Closed | `direa_core::canary` (gate/canary/decoy) wired into `build`; detector added under B-009 (K-025). |
-| B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Open | README Roadmap; depends on B-008. |
+| B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Closed | `canary::gauntlet` + `die-a-rea canary-selftest` in CI (K-026). |
 | B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
 | B-011 | Add `CONTRIBUTING.md` and `CHANGELOG.md` | Low | Docs | Closed | Both added and indexed in `docs/README.md`. |
 | B-012 | Declare MSRV (`rust-version`) in the workspace | Low | Build | Closed | `rust-version = "1.79"` in `[workspace.package]`, inherited by every crate; toolchain recorded as K-022. |
@@ -75,3 +75,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   `__DWARF` segments (K-024).
 - **B-008 (Closed, commit 19):** `direa_core::canary` provides the honest gate,
   canary tokens and bounded decoy text; `build` consumes them (K-025).
+- **B-009 (Closed, commit 20):** detector gauntlet (`canary::gauntlet`,
+  `canary-selftest`) wired into CI (K-026).

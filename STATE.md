@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 73 |
+| Tests (`cargo test --all`) | 74 |
 | Backlog items (`B-NNN`) | 22 |
 | Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 25 |
+| Durable lessons (`K-NNN`) | 26 |
 | Decision records (`ADR-NNNN`) | 15 |
 | Markdown docs (tracked) | 34 |
-| Commits in history | 19 |
+| Commits in history | 20 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -183,3 +183,5 @@ to bottom unless a dependency says otherwise.
   Closed `B-015`.
 - **B-008 (commit 19):** `direa_core::canary` module wired into `build`
   (K-025). Closed `B-008`.
+- **B-009 (commit 20):** detector gauntlet + `canary-selftest` in CI (K-026).
+  Closed `B-009`.
