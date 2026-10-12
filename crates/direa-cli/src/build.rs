@@ -16,9 +16,11 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use direa_core::adapter::{AdapterOp, AdapterRequest, SubprocessAdapter};
 use direa_core::native_post::{strip_symbols, StripReport};
 use direa_core::planner::detect_kind;
 use direa_core::random::derive_seed;
+use direa_core::AdapterEntry;
 use direa_core::{
     BuildMetadata, InjectedStats, Manifest, Randomization, ResolvedPolicy, Rng, TargetKind,
     TargetMetadata, Tarpit,
@@ -160,6 +162,7 @@ pub fn build(
                     injected = harden_text_file(
                         src, &dest, &policy, &notice, &canaries, &rz, &tp, &mut rng,
                     )?;
+                    apply_js_adapter(&dest, &policy, kind, &mut actions, &mut result.notes);
                 }
             }
             TargetKind::JavaScript | TargetKind::ElectronAsar => {
@@ -173,6 +176,7 @@ pub fn build(
                         .with_context(|| format!("creating {}", dest.display()))?;
                     harden_tree(src, &dest, &policy, &notice, &canaries)?;
                     injected = write_decoy_tree(&dest, &policy, &rz, &tp, &notice, &mut rng)?;
+                    apply_js_adapter(&dest, &policy, kind, &mut actions, &mut result.notes);
                 }
             }
             TargetKind::NativeElf
@@ -332,6 +336,66 @@ fn printable_runs(bytes: &[u8], min: usize) -> u64 {
         runs += 1;
     }
     runs
+}
+
+/// Resolve the optional external JavaScript adapter.
+///
+/// Order: `DIREA_JS_ADAPTER` (absolute path to an executable) then `direa-js` on
+/// `PATH`. Absence is not an error: build continues with its built-in transforms.
+fn resolve_js_adapter() -> Option<AdapterEntry> {
+    if let Ok(path) = std::env::var("DIREA_JS_ADAPTER") {
+        if !path.trim().is_empty() {
+            return Some(AdapterEntry {
+                id: "js".into(),
+                command: path,
+                args: vec![],
+                kinds: vec![TargetKind::JavaScript, TargetKind::ElectronAsar],
+                builtin: false,
+            });
+        }
+    }
+    direa_core::which("direa-js").map(|p| AdapterEntry {
+        id: "js".into(),
+        command: p.to_string_lossy().into_owned(),
+        args: vec![],
+        kinds: vec![TargetKind::JavaScript, TargetKind::ElectronAsar],
+        builtin: false,
+    })
+}
+
+/// Run the external JS adapter over the hardened target, if installed.
+fn apply_js_adapter(
+    dest: &Path,
+    policy: &ResolvedPolicy,
+    kind: TargetKind,
+    actions: &mut Vec<String>,
+    notes: &mut Vec<String>,
+) {
+    let Some(entry) = resolve_js_adapter() else {
+        notes.push(
+            "js adapter not installed (set DIREA_JS_ADAPTER or add `direa-js` to PATH); built-in transforms only"
+                .into(),
+        );
+        return;
+    };
+    actions.push(format!("js adapter: {}", entry.command));
+    let request = AdapterRequest {
+        protocol: direa_core::adapter::proto_version(),
+        op: AdapterOp::Apply,
+        target: dest.to_path_buf(),
+        kind,
+        policy: policy.clone(),
+        options: serde_json::json!({}),
+    };
+    match SubprocessAdapter::new(entry).run(&request) {
+        Ok(resp) => {
+            for step in &resp.steps {
+                actions.push(format!("js: {}", step.detail));
+            }
+            notes.push(format!("js adapter: {:?} — {}", resp.status, resp.message));
+        }
+        Err(e) => notes.push(format!("js adapter failed: {e}")),
+    }
 }
 
 fn ensure_parent(dest: &Path) -> Result<()> {
@@ -739,6 +803,52 @@ mod tests {
         assert!(st.injected_string_runs > 0);
         assert!(st.injected_bytes > 0);
         assert!(st.padding_bytes > 0);
+    }
+
+    #[test]
+    fn external_adapter_protocol_round_trips() {
+        use direa_core::{AdapterOp, AdapterRequest, Status, SubprocessAdapter};
+        let dir = std::env::temp_dir().join(format!("direa-js-adapter-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let target = dir.join("app.js");
+        std::fs::write(&target, "var x = 1;\n").unwrap();
+        let stub = dir.join("stub-adapter.sh");
+        let script = r#"#!/bin/sh
+input=$(cat)
+target=$(printf '%s' "$input" | sed -n 's/.*"target":"\([^"]*\)".*/\1/p')
+printf '\n/*stub-applied*/\n' >> "$target"
+printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfuscated","detail":"stub"}],"findings":[],"metrics":{},"message":"stub"}'
+"#;
+        std::fs::write(&stub, script).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let entry = AdapterEntry {
+            id: "js".into(),
+            command: stub.to_string_lossy().into_owned(),
+            args: vec![],
+            kinds: vec![TargetKind::JavaScript],
+            builtin: false,
+        };
+        let request = AdapterRequest {
+            protocol: direa_core::adapter::proto_version(),
+            op: AdapterOp::Apply,
+            target: target.clone(),
+            kind: TargetKind::JavaScript,
+            policy: direa_core::Profile::Low.resolve(),
+            options: serde_json::json!({}),
+        };
+        let resp = SubprocessAdapter::new(entry).run(&request).unwrap();
+        assert_eq!(resp.status, Status::Ok);
+        assert_eq!(resp.steps.len(), 1);
+        let out = std::fs::read_to_string(&target).unwrap();
+        assert!(
+            out.contains("stub-applied"),
+            "adapter must transform the target"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

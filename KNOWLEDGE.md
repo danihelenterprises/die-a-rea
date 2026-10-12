@@ -91,3 +91,17 @@ zeroing section data alone leaves the markers visible. ELF names live in
 [Evidence: `native_post.rs` (`scrub_all`); tests `elf_strips_symtab_and_debug`,
 `pe_clears_symbol_table_and_debug`] -> Any new format handler must scrub name
 strings as well as payload. (ADR-0005, ADR-0008)
+
+**K-013 — The `strings` probe collapses on single-line files.** It counts
+contiguous printable runs, so a compact/minified JS file is a *single* run:
+string-exposure can read ~1.0 no matter how well the bundle is obfuscated.
+[Evidence: local demo — compact `javascript-obfuscator` output produced
+"1 real of 1 sequences"] -> The probe needs a token- or literal-aware measure
+before it can score JS obfuscation; tracked as B-017. (Open)
+
+**K-014 — External adapters are optional at build time.** `build` resolves
+`DIREA_JS_ADAPTER` then `direa-js` on `PATH`; absence or failure is a note, not an
+error, and the built-in transforms still apply. [Evidence:
+`crates/direa-cli/src/build.rs` (`resolve_js_adapter`, `apply_js_adapter`); test
+`external_adapter_protocol_round_trips`] -> Never make an adapter a hard build
+dependency. (ADR-0009)

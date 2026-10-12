@@ -1,0 +1,173 @@
+#!/usr/bin/env node
+/*
+ * direa-js — the die-a-rea JavaScript/Electron adapter.
+ *
+ * Speaks the die-a-rea adapter protocol (ADR-0002): reads ONE JSON request from
+ * stdin, writes ONE JSON response to stdout. It is a plain Node script with no
+ * bundled dependencies; it opportunistically uses `javascript-obfuscator` when
+ * that package is resolvable, and otherwise reports `unavailable` so the host
+ * can continue with its built-in transforms.
+ *
+ * Point the host at this file:
+ *   export DIREA_JS_ADAPTER=/absolute/path/to/adapters/js/direa-js
+ * or put an executable named `direa-js` on PATH.
+ */
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+function readStdin() {
+  try {
+    return fs.readFileSync(0, 'utf8');
+  } catch (_) {
+    return '';
+  }
+}
+
+function emit(obj) {
+  process.stdout.write(JSON.stringify(obj));
+}
+
+function loadObfuscator() {
+  try {
+    return require('javascript-obfuscator');
+  } catch (_) {
+    return null;
+  }
+}
+
+function walk(dir, out) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(p, out);
+    else out.push(p);
+  }
+}
+
+function collectJs(target) {
+  const files = [];
+  const st = fs.statSync(target);
+  if (st.isDirectory()) walk(target, files);
+  else files.push(target);
+  return files.filter((f) => /\.(js|mjs|cjs)$/i.test(f));
+}
+
+function main() {
+  const adapter = 'js';
+  let req;
+  try {
+    req = JSON.parse(readStdin() || '{}');
+  } catch (e) {
+    emit({
+      adapter,
+      status: 'error',
+      findings: [{ severity: 'error', code: 'bad_request', message: String(e) }],
+      message: 'invalid JSON request',
+    });
+    return;
+  }
+
+  const op = req.op || 'plan';
+  const obfuscator = loadObfuscator();
+
+  if (op === 'capabilities' || op === 'verify') {
+    emit({
+      adapter,
+      status: obfuscator ? 'ok' : 'unavailable',
+      steps: [],
+      findings: [],
+      metrics: { engine: obfuscator ? 'javascript-obfuscator' : 'none' },
+      message: obfuscator ? 'ready' : 'javascript-obfuscator not installed',
+    });
+    return;
+  }
+
+  if (!obfuscator) {
+    emit({
+      adapter,
+      status: 'unavailable',
+      steps: [],
+      findings: [],
+      metrics: {},
+      message: 'javascript-obfuscator not installed; skipping',
+    });
+    return;
+  }
+
+  let files;
+  try {
+    files = collectJs(req.target);
+  } catch (e) {
+    emit({
+      adapter,
+      status: 'error',
+      findings: [{ severity: 'error', code: 'no_target', message: String(e) }],
+      message: 'target missing or unreadable',
+    });
+    return;
+  }
+
+  if (op === 'plan') {
+    const steps = files.map((f) => ({
+      adapter,
+      action: 'obfuscate',
+      detail: f,
+      external: true,
+      destructive: true,
+    }));
+    emit({
+      adapter,
+      status: 'ok',
+      steps,
+      findings: [],
+      metrics: { files: files.length },
+      message: `would obfuscate ${files.length} file(s)`,
+    });
+    return;
+  }
+
+  // apply
+  const options = Object.assign(
+    {
+      compact: true,
+      controlFlowFlattening: true,
+      controlFlowFlatteningThreshold: 0.5,
+      deadCodeInjection: false,
+      stringArray: true,
+      stringArrayEncoding: ['base64'],
+      stringArrayThreshold: 0.75,
+    },
+    req.options && typeof req.options === 'object' ? req.options : {},
+  );
+
+  const steps = [];
+  let count = 0;
+  for (const f of files) {
+    try {
+      const code = fs.readFileSync(f, 'utf8');
+      const out = obfuscator.obfuscate(code, options).getObfuscatedCode();
+      fs.writeFileSync(f, out);
+      steps.push({ adapter, action: 'obfuscated', detail: f, external: true, destructive: true });
+      count += 1;
+    } catch (e) {
+      steps.push({
+        adapter,
+        action: 'failed',
+        detail: `${f}: ${e}`,
+        external: true,
+        destructive: false,
+      });
+    }
+  }
+  emit({
+    adapter,
+    status: 'ok',
+    steps,
+    findings: [],
+    metrics: { files: count },
+    message: `obfuscated ${count} file(s)`,
+  });
+}
+
+main();

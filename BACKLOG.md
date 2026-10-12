@@ -15,7 +15,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 |---|---|---|---|---|---|
 | B-001 | Implement the LLVM adapter (C/C++/Rust/Swift) wrapping Pluto/O-MVLL passes | High | Adapters | Open | `planner.rs` registers `llvm` → `direa-llvm`, which does not exist yet. |
 | B-002 | Implement the Go adapter (garble: identifiers, literals, strip build info) | High | Adapters | Open | REA has a built-in Go provider; stripping build info is the direct counter. |
-| B-003 | Implement the JavaScript/Electron adapter (javascript-obfuscator + bytenode/asarmor) | High | Adapters | Open | Highest value: REA's JS path needs no native engine. |
+| B-003 | Implement the JavaScript/Electron adapter (javascript-obfuscator + bytenode/asarmor) | High | Adapters | In-progress | Adapter implemented, wired and tested (ADR-0009); `string-exposure` improvement is blocked by the probe blind spot (B-017). |
 | B-004 | Implement built-in `native-post` stripping (symbols/debug/build metadata) for ELF/Mach-O/PE | High | Adapters | Closed | In-process `native_post.rs` (ELF/PE/Mach-O); wired via `harden_native`. Mach-O DWARF/fat + PE resources remain follow-ups. |
 | B-005 | Implement the .NET adapter (ConfuserEx driver) | Medium | Adapters | Open | Registry lists `clr`; no implementation. |
 | B-006 | Implement the Android/JVM adapter (R8/ProGuard config generation) | Medium | Adapters | Open | Registry lists `android`; Promises GPL tool stays subprocess-only (ADR-0007). |
@@ -29,6 +29,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-014 | Strengthen the docs-check counter-duplication heuristic | Low | Tooling | Open | `tools/docs-check.sh` check 5 is best-effort (see STATE). |
 | B-015 | Extend `native-post` to Mach-O DWARF sections and fat containers | Medium | Adapters | Open | `native_post.rs` handles only `LC_SYMTAB`; `__DWARF`/segment names and FAT remain. |
 | B-016 | Extend `native-post` to PE resources and the rich header | Low | Adapters | Open | The PE handler clears the COFF symbol table and debug directory only. |
+| B-017 | Make the `strings` probe token/literal-aware so minified JS scores correctly | High | RRS | Open | The probe counts printable runs; a one-line bundle is a single run (K-013). Blocks B-003's metric clause. |
 
 ## Closed / Decided
 

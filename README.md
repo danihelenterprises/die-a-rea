@@ -178,6 +178,7 @@ die-a-rea/
 │  ├─ direa-core/        # manifest, policy engine, adapter SDK, planner, RRS model
 │  ├─ direa-cli/         # the `die-a-rea` binary
 │  └─ direa-verify/      # probes, REA adversary, RRS report
+├─ adapters/js/          # external JavaScript/Electron adapter (`direa-js`)
 ├─ policies/             # low | medium | high | paranoid presets
 ├─ examples/die-a-rea.toml
 └─ docs/                 # threat model, RRS, randomization, tarpits, ethics, ...
@@ -194,6 +195,11 @@ die-a-rea (host)  <--JSON response-- adapter (stdout)
 
 Operations: `capabilities`, `plan`, `apply`, `verify`. See
 [`docs/PIGGYBACK.md`](docs/PIGGYBACK.md) for the upstream projects we build on.
+
+Point the build at the bundled JS adapter with
+`export DIREA_JS_ADAPTER=$PWD/adapters/js/direa-js` (or put `direa-js` on
+`PATH`); it uses `javascript-obfuscator` when resolvable and is otherwise
+skipped with a note (ADR-0009).
 
 ---
 
@@ -248,6 +254,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - Planning with an adapter registry and missing-adapter reporting.
 - Safe hardening: source-map removal, comment stripping, notice/canary injection.
 - Built-in `native-post`: in-process symbol/debug/build-metadata stripping for ELF/PE/Mach-O (ADR-0008).
+- JavaScript adapter: external `direa-js` (javascript-obfuscator) runs over hardened JS/Electron output when installed (ADR-0009).
 - Seeded randomization: decoy functions/strings/files, depth bombs, reproducible via `--seed`.
 - Tarpits: bounded padding, honeypots, honest prompt gate, optional custom payloads.
 - Build-metadata sidecar enabling decoy-aware verification.

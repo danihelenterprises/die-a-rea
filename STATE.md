@@ -42,8 +42,9 @@ to bottom unless a dependency says otherwise.
 
 1. **B-001 — LLVM adapter.** Acceptance: `plan` lists `llvm` as available for an
    ELF target and `build` applies a control-flow pass with all tests green.
-2. **B-003 — JavaScript/Electron adapter.** Acceptance: a JS bundle round-trips
-   through the adapter and string-exposure improves versus the built-in path.
+2. **B-017 — Token/literal-aware `strings` probe.** Acceptance: a compact
+   (single-line) JS bundle no longer reads as a single sequence, and
+   `string-exposure` responds to obfuscation. Unblocks B-003's metric clause.
 3. **B-002 — Go adapter (garble + build-info strip).** Acceptance: a Go binary
    built through the adapter contains no `Go build ID` and no source paths.
 4. **B-007 — Runtime guard library + `runtime-instrumentation-exposure` axis.**
@@ -91,6 +92,9 @@ to bottom unless a dependency says otherwise.
 - `die-a-rea build` on a native ELF/PE/Mach-O target runs the built-in
   `native-post` stripper (symbols/debug/build metadata); e.g. a `gcc -g` ELF loses
   `.symtab`/`.debug_*` and the debug axis moves 1.00 -> 0.00 (ADR-0008).
+- `die-a-rea build` on a JS target runs the external `js` adapter when
+  `DIREA_JS_ADAPTER` or `direa-js` is available (ADR-0009); e.g. a bundle
+  obfuscated by `javascript-obfuscator`. Absence is a note, not an error.
 - `die-a-rea verify --original A --hardened B` prints an RRS report; `--json`
   for CI; `--with-rea` runs the external adversary when available.
 
@@ -111,13 +115,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 44 |
-| Backlog items (`B-NNN`) | 16 |
+| Tests (`cargo test --all`) | 45 |
+| Backlog items (`B-NNN`) | 17 |
 | Open backlog items (High) | 4 |
-| Durable lessons (`K-NNN`) | 12 |
-| Decision records (`ADR-NNNN`) | 8 |
-| Markdown docs (tracked) | 24 |
-| Commits in history | 4 |
+| Durable lessons (`K-NNN`) | 14 |
+| Decision records (`ADR-NNNN`) | 9 |
+| Markdown docs (tracked) | 25 |
+| Commits in history | 5 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -136,3 +140,7 @@ to bottom unless a dependency says otherwise.
 - **B-004 (commit 4):** built-in `native-post` strips ELF/PE/Mach-O symbol, debug
   and build metadata in-process (ADR-0008, lessons K-011/K-012). Closed `B-004`;
   follow-ups B-015/B-016 opened.
+- **B-003 (commit 5):** JavaScript adapter implemented and wired (ADR-0009,
+  K-014); run end-to-end against `javascript-obfuscator`. B-003 stays
+  In-progress: the metric clause is blocked by the probe blind spot (B-017,
+  K-013).
