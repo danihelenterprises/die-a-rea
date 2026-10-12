@@ -40,34 +40,35 @@ listed under "What works end-to-end today".
 One commit-sized unit per entry; each names its acceptance check. Work them top
 to bottom unless a dependency says otherwise.
 
-1. **B-004 — Built-in `native-post` stripping.** Acceptance: after `build` on an
-   ELF/Mach-O/PE target, `.symtab`/`.debug_*`/build-id markers are absent and the
-   symbol/debug RRS axes are measured (not skipped).
-2. **B-001 — LLVM adapter.** Acceptance: `plan` lists `llvm` as available for an
+1. **B-001 — LLVM adapter.** Acceptance: `plan` lists `llvm` as available for an
    ELF target and `build` applies a control-flow pass with all tests green.
-3. **B-003 — JavaScript/Electron adapter.** Acceptance: a JS bundle round-trips
+2. **B-003 — JavaScript/Electron adapter.** Acceptance: a JS bundle round-trips
    through the adapter and string-exposure improves versus the built-in path.
-4. **B-002 — Go adapter (garble + build-info strip).** Acceptance: a Go binary
+3. **B-002 — Go adapter (garble + build-info strip).** Acceptance: a Go binary
    built through the adapter contains no `Go build ID` and no source paths.
-5. **B-007 — Runtime guard library + `runtime-instrumentation-exposure` axis.**
+4. **B-007 — Runtime guard library + `runtime-instrumentation-exposure` axis.**
    Acceptance: a unit test detects a debugger/instrumentation signature and the
    axis appears in the report.
-6. **B-005 — .NET adapter (ConfuserEx).** Acceptance: an assembly is protected
+5. **B-005 — .NET adapter (ConfuserEx).** Acceptance: an assembly is protected
    end-to-end and `verify` reports the CLR-safe axes.
-7. **B-006 — Android/JVM adapter (R8/ProGuard).** Acceptance: a config is
+6. **B-006 — Android/JVM adapter (R8/ProGuard).** Acceptance: a config is
    generated and applied via subprocess; no copyleft code is linked (ADR-0007).
-8. **B-008 — `direa-canary` adapter.** Acceptance: detector-hardened payloads
+7. **B-008 — `direa-canary` adapter.** Acceptance: detector-hardened payloads
    are generated and round-trip through `build`.
-9. **B-009 — Detector-hardening gauntlet.** Acceptance: the NPS-style detector
+8. **B-009 — Detector-hardening gauntlet.** Acceptance: the NPS-style detector
    is run against our canaries in CI and reports detection rates.
-10. **B-011 — `CONTRIBUTING.md` + `CHANGELOG.md`.** Acceptance: both exist and
-    are indexed in `docs/README.md`.
-11. **B-012 — Declare MSRV.** Acceptance: `rust-version` is set and the exercised
+9. **B-011 — `CONTRIBUTING.md` + `CHANGELOG.md`.** Acceptance: both exist and
+   are indexed in `docs/README.md`.
+10. **B-012 — Declare MSRV.** Acceptance: `rust-version` is set and the exercised
     toolchain is recorded in `KNOWLEDGE.md`.
-12. **B-013 — Bound deceptive `agent_decoys`.** Acceptance: a decision ADR
+11. **B-013 — Bound deceptive `agent_decoys`.** Acceptance: a decision ADR
     records the validated limits (depends on B-009).
-13. **B-014 — Strengthen docs-check counter heuristic.** Acceptance: the check
+12. **B-014 — Strengthen docs-check counter heuristic.** Acceptance: the check
     fails on a planted duplicate counter and passes on the clean tree.
+13. **B-015 — Mach-O DWARF/fat `native-post`.** Acceptance: `__DWARF` sections
+    and fat containers lose symbol/debug metadata (follow-up to B-004).
+14. **B-016 — PE resources/rich-header `native-post`.** Acceptance: PE resource
+    and rich-header metadata are stripped (follow-up to B-004).
 
 ## Per-change loop
 
@@ -87,6 +88,9 @@ to bottom unless a dependency says otherwise.
 - `die-a-rea plan` / `plan --json` lists per-target adapters and missing ones.
 - `die-a-rea build --out DIR [--seed N]` hardens JS/tree targets, injects seeded
   decoys + bounded tarpits, and writes `DIR/die-a-rea.build.json`.
+- `die-a-rea build` on a native ELF/PE/Mach-O target runs the built-in
+  `native-post` stripper (symbols/debug/build metadata); e.g. a `gcc -g` ELF loses
+  `.symtab`/`.debug_*` and the debug axis moves 1.00 -> 0.00 (ADR-0008).
 - `die-a-rea verify --original A --hardened B` prints an RRS report; `--json`
   for CI; `--with-rea` runs the external adversary when available.
 
@@ -107,13 +111,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 37 |
-| Backlog items (`B-NNN`) | 14 |
-| Open backlog items (High) | 5 |
-| Durable lessons (`K-NNN`) | 10 |
-| Decision records (`ADR-NNNN`) | 7 |
-| Markdown docs (tracked) | 23 |
-| Commits in history | 3 |
+| Tests (`cargo test --all`) | 44 |
+| Backlog items (`B-NNN`) | 16 |
+| Open backlog items (High) | 4 |
+| Durable lessons (`K-NNN`) | 12 |
+| Decision records (`ADR-NNNN`) | 8 |
+| Markdown docs (tracked) | 24 |
+| Commits in history | 4 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -129,3 +133,6 @@ to bottom unless a dependency says otherwise.
 - **B-010 (commit 3):** configured `origin`
   (`git@github-die-a-rea:danihelenterprises/die-a-rea.git`, GitHub over 443);
   `docs-check` check 4 now runs against a real commit range. Closed `B-010`.
+- **B-004 (commit 4):** built-in `native-post` strips ELF/PE/Mach-O symbol, debug
+  and build metadata in-process (ADR-0008, lessons K-011/K-012). Closed `B-004`;
+  follow-ups B-015/B-016 opened.

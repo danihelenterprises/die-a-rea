@@ -247,6 +247,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - Target detection (ELF, Mach-O, PE, .NET, Go, JS, Electron/ASAR, WASM, APK).
 - Planning with an adapter registry and missing-adapter reporting.
 - Safe hardening: source-map removal, comment stripping, notice/canary injection.
+- Built-in `native-post`: in-process symbol/debug/build-metadata stripping for ELF/PE/Mach-O (ADR-0008).
 - Seeded randomization: decoy functions/strings/files, depth bombs, reproducible via `--seed`.
 - Tarpits: bounded padding, honeypots, honest prompt gate, optional custom payloads.
 - Build-metadata sidecar enabling decoy-aware verification.

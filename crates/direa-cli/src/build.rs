@@ -16,6 +16,7 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use direa_core::native_post::{strip_symbols, StripReport};
 use direa_core::planner::detect_kind;
 use direa_core::random::derive_seed;
 use direa_core::{
@@ -174,18 +175,55 @@ pub fn build(
                     injected = write_decoy_tree(&dest, &policy, &rz, &tp, &notice, &mut rng)?;
                 }
             }
-            _ => {
-                actions.push("copy artifact".into());
+            TargetKind::NativeElf
+            | TargetKind::NativeMachO
+            | TargetKind::NativePe
+            | TargetKind::Go => {
+                actions.push("native-post: strip symbols/debug/build metadata".into());
                 if policy.tarpit {
                     actions.push("append tarpit blob (re-sign required)".into());
                 }
-                result.notes.push(format!(
-                    "note: {} targets receive only artifact-level protection; install the matching adapter for deep transforms",
-                    kind.as_str()
-                ));
+                result.notes.push(
+                    "note: deeper native transforms (control-flow) require the `llvm` adapter"
+                        .into(),
+                );
                 if !dry_run {
                     ensure_parent(&dest)?;
-                    harden_binary(src, &dest, &policy, &tp, &notice, &mut rng, &mut injected)?;
+                    let rep =
+                        harden_native(src, &dest, &policy, &tp, &notice, &mut rng, &mut injected)?;
+                    result.notes.push(format!(
+                        "native-post[{}]: removed {} structure(s), zeroed {} bytes",
+                        rep.format,
+                        rep.removed.len(),
+                        rep.bytes_zeroed
+                    ));
+                } else {
+                    injected.padding_bytes = if policy.tarpit {
+                        tp.padding_kb.min(tp.max_total_kb) as u64 * 1024
+                    } else {
+                        0
+                    };
+                    injected.injected_bytes = injected.padding_bytes;
+                }
+            }
+            _ => {
+                // Unknown containers still get a best-effort native strip and an
+                // optional tarpit append.
+                actions.push("copy artifact; best-effort native-post".into());
+                if policy.tarpit {
+                    actions.push("append tarpit blob (re-sign required)".into());
+                }
+                if !dry_run {
+                    ensure_parent(&dest)?;
+                    let rep =
+                        harden_native(src, &dest, &policy, &tp, &notice, &mut rng, &mut injected)?;
+                    if rep.changed {
+                        result.notes.push(format!(
+                            "native-post[{}]: removed {} structure(s)",
+                            rep.format,
+                            rep.removed.len()
+                        ));
+                    }
                 } else if policy.tarpit {
                     injected.padding_bytes = tp.padding_kb.min(tp.max_total_kb) as u64 * 1024;
                     injected.injected_bytes = injected.padding_bytes;
@@ -479,7 +517,7 @@ fn write_decoy_tree(
     Ok(stats)
 }
 
-fn harden_binary(
+fn harden_native(
     src: &Path,
     dest: &Path,
     policy: &ResolvedPolicy,
@@ -487,8 +525,13 @@ fn harden_binary(
     notice: &str,
     rng: &mut Rng,
     stats: &mut InjectedStats,
-) -> Result<()> {
+) -> Result<StripReport> {
     let mut data = std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
+    let report = if policy.strip_symbols {
+        strip_symbols(&mut data)
+    } else {
+        StripReport::default()
+    };
     if policy.tarpit {
         let (blob, bytes) = generate_padding(rng, tp.padding_kb, tp.max_total_kb, notice);
         data.extend_from_slice(b"\n/* ");
@@ -501,7 +544,7 @@ fn harden_binary(
             printable_runs(&data[data.len() - stats.padding_bytes as usize..], 6);
     }
     std::fs::write(dest, data).with_context(|| format!("writing {}", dest.display()))?;
-    Ok(())
+    Ok(report)
 }
 
 /// Generate an appended JavaScript decoy + tarpit bundle.

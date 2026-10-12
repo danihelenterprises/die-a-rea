@@ -76,3 +76,18 @@ injection behind a cap. (Open)
 filename. [Evidence: `crates/direa-core/src/buildmeta.rs`; tests `find_by_name`,
 `noise_fraction_is_clamped`] -> Changing the output layout or sidecar location
 breaks decoy discounting and the analysis-noise axis. (Open)
+
+**K-011 — `native-post` is conservative and never panics.** `strip_symbols`
+returns a `StripReport` with `changed == false` on unsupported or truncated
+layouts, and never rewrites code or the dynamic symbol table (`.dynsym`).
+[Evidence: `crates/direa-core/src/native_post.rs`; tests `unknown_is_untouched`,
+`tiny_truncated_input_does_not_panic`] -> Extend coverage by adding formats and
+paths with bounds checks, never by loosening existing ones. (ADR-0008)
+
+**K-012 — Native de-stripping must scrub name literals, not just data.** The
+verify probes match literal marker bytes (`.symtab`, `.debug_info`, `.pdb`), so
+zeroing section data alone leaves the markers visible. ELF names live in
+`.shstrtab` and PE PDB paths in the debug data; both must be overwritten.
+[Evidence: `native_post.rs` (`scrub_all`); tests `elf_strips_symtab_and_debug`,
+`pe_clears_symbol_table_and_debug`] -> Any new format handler must scrub name
+strings as well as payload. (ADR-0005, ADR-0008)

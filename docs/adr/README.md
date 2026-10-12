@@ -23,5 +23,6 @@ file, id `ADR-NNNN`, never reused.
 | [ADR-0005](ADR-0005-signal-to-noise-and-skip-axes.md) | Signal-to-noise strings and skip inapplicable axes | Accepted |
 | [ADR-0006](ADR-0006-honest-agent-defense.md) | Honest-by-default agent defense; deception opt-in | Accepted |
 | [ADR-0007](ADR-0007-mit-core-subprocess-boundary.md) | MIT core; copyleft/proprietary tools behind the subprocess boundary | Accepted |
+| [ADR-0008](ADR-0008-native-post-in-process.md) | Built-in `native-post` strips metadata in-process, conservatively | Accepted |
 
 Template: [0000-template.md](0000-template.md).

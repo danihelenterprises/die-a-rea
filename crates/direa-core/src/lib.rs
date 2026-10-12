@@ -10,6 +10,7 @@ pub mod adapter;
 pub mod buildmeta;
 pub mod error;
 pub mod manifest;
+pub mod native_post;
 pub mod planner;
 pub mod policy;
 pub mod random;
@@ -22,6 +23,7 @@ pub use adapter::{
 pub use buildmeta::{BuildMetadata, InjectedStats, TargetMetadata};
 pub use error::{DireaError, Result};
 pub use manifest::{AgentDefense, Manifest, Project, Randomization, TargetSpec, Tarpit};
+pub use native_post::{NativeFormat, StripReport};
 pub use planner::{detect_kind, plan_manifest, BuildPlan, TargetKind};
 pub use policy::{PolicyOverrides, Profile, ResolvedPolicy};
 pub use random::{derive_seed, Rng};

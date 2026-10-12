@@ -82,3 +82,9 @@ The built-in probes are transparent **proxies**, not a full decompiler. They are
 deliberately dependency-free so results are reproducible. External adapters can
 contribute additional, stronger measurements (e.g. actual decompiler output
 fidelity) through the `verify` adapter operation.
+
+For native targets, the symbol and debug axes are moved by the built-in
+`native-post` stripper, which removes ELF/PE/Mach-O symbol, debug and build
+metadata in-process (ADR-0008). Because de-stripping must also scrub the literal
+section/debug *names* (not just their data), the probes are what confirm it —
+see lesson K-012.
