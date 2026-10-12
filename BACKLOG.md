@@ -22,7 +22,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-007 | Add a runtime guard library and wire the `runtime-instrumentation-exposure` RRS axis | High | Runtime | Open | `docs/RRS.md` marks the axis *planned*; no guard code exists. |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Open | README Roadmap; `agent_decoys` today only injects comments/strings. |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Open | README Roadmap; depends on B-008. |
-| B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Open | `git rev-parse` failed before install; no remote exists. |
+| B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
 | B-011 | Add `CONTRIBUTING.md` and `CHANGELOG.md` | Low | Docs | Open | Neither file exists. |
 | B-012 | Declare MSRV (`rust-version`) in the workspace | Low | Build | Open | `Cargo.toml` has no `rust-version`; CI pins `stable`. |
 | B-013 | Validate and bound deceptive `agent_decoys` payloads before any default use | Medium | Agent | Open | `docs/ETHICS.md` and ADR-0006 keep deception opt-in; depends on B-009. |
@@ -30,4 +30,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 
 ## Closed / Decided
 
-*(none yet)*
+- **B-010 (Closed, commit 3):** configured `origin` and pushed `main` to
+  `danihelenterprises/die-a-rea` via a GitHub-over-443 deploy key.

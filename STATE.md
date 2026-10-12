@@ -40,36 +40,33 @@ listed under "What works end-to-end today".
 One commit-sized unit per entry; each names its acceptance check. Work them top
 to bottom unless a dependency says otherwise.
 
-1. **B-010 — Configure a git remote.** Acceptance: `git remote -v` shows an
-   `origin`, and `tools/docs-check.sh` check 4 reports a commit range instead of
-   skipping.
-2. **B-004 — Built-in `native-post` stripping.** Acceptance: after `build` on an
+1. **B-004 — Built-in `native-post` stripping.** Acceptance: after `build` on an
    ELF/Mach-O/PE target, `.symtab`/`.debug_*`/build-id markers are absent and the
    symbol/debug RRS axes are measured (not skipped).
-3. **B-001 — LLVM adapter.** Acceptance: `plan` lists `llvm` as available for an
+2. **B-001 — LLVM adapter.** Acceptance: `plan` lists `llvm` as available for an
    ELF target and `build` applies a control-flow pass with all tests green.
-4. **B-003 — JavaScript/Electron adapter.** Acceptance: a JS bundle round-trips
+3. **B-003 — JavaScript/Electron adapter.** Acceptance: a JS bundle round-trips
    through the adapter and string-exposure improves versus the built-in path.
-5. **B-002 — Go adapter (garble + build-info strip).** Acceptance: a Go binary
+4. **B-002 — Go adapter (garble + build-info strip).** Acceptance: a Go binary
    built through the adapter contains no `Go build ID` and no source paths.
-6. **B-007 — Runtime guard library + `runtime-instrumentation-exposure` axis.**
+5. **B-007 — Runtime guard library + `runtime-instrumentation-exposure` axis.**
    Acceptance: a unit test detects a debugger/instrumentation signature and the
    axis appears in the report.
-7. **B-005 — .NET adapter (ConfuserEx).** Acceptance: an assembly is protected
+6. **B-005 — .NET adapter (ConfuserEx).** Acceptance: an assembly is protected
    end-to-end and `verify` reports the CLR-safe axes.
-8. **B-006 — Android/JVM adapter (R8/ProGuard).** Acceptance: a config is
+7. **B-006 — Android/JVM adapter (R8/ProGuard).** Acceptance: a config is
    generated and applied via subprocess; no copyleft code is linked (ADR-0007).
-9. **B-008 — `direa-canary` adapter.** Acceptance: detector-hardened payloads
+8. **B-008 — `direa-canary` adapter.** Acceptance: detector-hardened payloads
    are generated and round-trip through `build`.
-10. **B-009 — Detector-hardening gauntlet.** Acceptance: the NPS-style detector
-    is run against our canaries in CI and reports detection rates.
-11. **B-011 — `CONTRIBUTING.md` + `CHANGELOG.md`.** Acceptance: both exist and
+9. **B-009 — Detector-hardening gauntlet.** Acceptance: the NPS-style detector
+   is run against our canaries in CI and reports detection rates.
+10. **B-011 — `CONTRIBUTING.md` + `CHANGELOG.md`.** Acceptance: both exist and
     are indexed in `docs/README.md`.
-12. **B-012 — Declare MSRV.** Acceptance: `rust-version` is set and the exercised
+11. **B-012 — Declare MSRV.** Acceptance: `rust-version` is set and the exercised
     toolchain is recorded in `KNOWLEDGE.md`.
-13. **B-013 — Bound deceptive `agent_decoys`.** Acceptance: a decision ADR
+12. **B-013 — Bound deceptive `agent_decoys`.** Acceptance: a decision ADR
     records the validated limits (depends on B-009).
-14. **B-014 — Strengthen docs-check counter heuristic.** Acceptance: the check
+13. **B-014 — Strengthen docs-check counter heuristic.** Acceptance: the check
     fails on a planted duplicate counter and passes on the clean tree.
 
 ## Per-change loop
@@ -112,11 +109,11 @@ to bottom unless a dependency says otherwise.
 | Rust crates | 3 |
 | Tests (`cargo test --all`) | 37 |
 | Backlog items (`B-NNN`) | 14 |
-| Open backlog items (High) | 6 |
+| Open backlog items (High) | 5 |
 | Durable lessons (`K-NNN`) | 10 |
 | Decision records (`ADR-NNNN`) | 7 |
 | Markdown docs (tracked) | 23 |
-| Commits in history | 2 |
+| Commits in history | 3 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -129,3 +126,6 @@ to bottom unless a dependency says otherwise.
   and report. All are covered by tests and listed under "What works".
 - **Backfill (commit 2):** `KNOWLEDGE.md` seeded with K-002–K-010 (toolchain facts
   and failure modes evidenced by tests).
+- **B-010 (commit 3):** configured `origin`
+  (`git@github-die-a-rea:danihelenterprises/die-a-rea.git`, GitHub over 443);
+  `docs-check` check 4 now runs against a real commit range. Closed `B-010`.
