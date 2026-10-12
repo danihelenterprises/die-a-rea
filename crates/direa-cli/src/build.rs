@@ -15,7 +15,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use direa_core::adapter::{AdapterOp, AdapterRequest, SubprocessAdapter};
 use direa_core::native_post::{strip_symbols, StripReport};
 use direa_core::planner::detect_kind;
@@ -84,6 +84,7 @@ pub fn build(
     out: &Path,
     dry_run: bool,
     seed_override: Option<u64>,
+    force: bool,
 ) -> Result<BuildResult> {
     let policy = manifest.resolved_policy();
     let canaries = resolve_canaries(manifest, &policy);
@@ -115,6 +116,23 @@ pub fn build(
         return Ok(result);
     }
 
+    // Safety: never write into a directory die-a-rea did not create (unless
+    // explicitly forced), so an existing tree is not clobbered.
+    if !dry_run && !force && out.exists() {
+        let has_sidecar = out
+            .join(direa_core::buildmeta::BUILD_METADATA_FILE)
+            .exists();
+        let non_empty = std::fs::read_dir(out)
+            .map(|mut d| d.next().is_some())
+            .unwrap_or(false);
+        if non_empty && !has_sidecar {
+            bail!(
+                "output directory {} already exists and was not created by die-a-rea; pass --force to write into it (or choose a fresh --out)",
+                out.display()
+            );
+        }
+    }
+
     for spec in &manifest.targets {
         let src = &spec.path;
         if !src.exists() {
@@ -143,6 +161,7 @@ pub fn build(
 
         let rel = relative_dest(src);
         let dest = out.join(&rel);
+        guard_source_and_output(src, &dest)?;
         let mut actions = Vec::new();
         let mut injected = InjectedStats::default();
 
@@ -402,6 +421,34 @@ fn relative_dest(src: &Path) -> PathBuf {
     } else {
         src.to_path_buf()
     }
+}
+
+/// Best-effort absolute path (resolves symlinks when the path exists).
+fn absolute(path: &Path) -> PathBuf {
+    std::fs::canonicalize(path)
+        .or_else(|_| std::path::absolute(path))
+        .unwrap_or_else(|_| path.to_path_buf())
+}
+
+/// Refuse output that would overwrite the source artifact or be written inside
+/// the source directory. This is the guard that keeps `build` from damaging the
+/// user's codebase (ADR-0012, K-017).
+fn guard_source_and_output(src: &Path, dest: &Path) -> Result<()> {
+    let a = absolute(src);
+    let d = absolute(dest);
+    if d == a {
+        bail!(
+            "refusing to write output over the source artifact ({}); choose an --out outside the source",
+            src.display()
+        );
+    }
+    if a.is_dir() && d.starts_with(&a) {
+        bail!(
+            "refusing to write output inside the source directory ({}); choose an --out outside it",
+            src.display()
+        );
+    }
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -833,6 +880,24 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
             out.contains("stub-applied"),
             "adapter must transform the target"
         );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn refuses_output_over_source() {
+        let dir = std::env::temp_dir().join(format!("direa-guard-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("app.js");
+        std::fs::write(&src, "var x = 1;\n").unwrap();
+        // dest == src
+        assert!(guard_source_and_output(&src, &src).is_err());
+        // dest inside the source directory
+        let nested = dir.join("nested").join("app.js");
+        assert!(guard_source_and_output(&dir, &nested).is_err());
+        // dest elsewhere is fine
+        let elsewhere = dir.join("out").join("app.js");
+        assert!(guard_source_and_output(&src, &elsewhere).is_ok());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

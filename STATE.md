@@ -115,13 +115,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 51 |
-| Backlog items (`B-NNN`) | 18 |
+| Tests (`cargo test --all`) | 52 |
+| Backlog items (`B-NNN`) | 19 |
 | Open backlog items (High) | 3 |
-| Durable lessons (`K-NNN`) | 16 |
-| Decision records (`ADR-NNNN`) | 11 |
-| Markdown docs (tracked) | 27 |
-| Commits in history | 7 |
+| Durable lessons (`K-NNN`) | 17 |
+| Decision records (`ADR-NNNN`) | 12 |
+| Markdown docs (tracked) | 28 |
+| Commits in history | 8 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -152,3 +152,6 @@ to bottom unless a dependency says otherwise.
   tokens (ADR-0011, K-016), superseding ADR-0005's count formula. Encoding now
   scores without heuristics; closed `B-018` and `B-003` (JS adapter clause now
   passes: 5/9 tokens survive vs 9/9 for the built-in path).
+- **B-019 (commit 8):** `build` now refuses to overwrite the source artifact or a
+  foreign (non-die-a-rea) output directory; `--force` overrides (ADR-0012,
+  K-017). Closed `B-019`.

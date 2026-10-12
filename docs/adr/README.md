@@ -27,5 +27,6 @@ file, id `ADR-NNNN`, never reused.
 | [ADR-0009](ADR-0009-build-executes-external-adapters.md) | Build executes external adapters opportunistically | Accepted |
 | [ADR-0010](ADR-0010-strings-axis-counts-tokens.md) | The `strings` axis counts identifier/literal tokens | Accepted |
 | [ADR-0011](ADR-0011-string-exposure-measures-verbatim-survival.md) | String exposure measures verbatim survival | Accepted |
+| [ADR-0012](ADR-0012-build-never-overwrites-source.md) | Build never overwrites the source or unrelated files | Accepted |
 
 Template: [0000-template.md](0000-template.md).

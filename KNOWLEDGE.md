@@ -121,3 +121,11 @@ baseline's tokens still appear verbatim drops correctly (demo: 5 of 9 survive).
 [Evidence: `crates/direa-verify/src/harness.rs` (`token_set`, strings branch);
 ADR-0011] -> Never score the strings axis with a count; extract token sets from
 both artifacts and intersect. (ADR-0011)
+
+**K-017 — `build` refuses to clobber source or a foreign output directory.**
+Because `dest = out.join(relative_dest(src))`, `--out .` would overwrite the
+source. The guard rejects output equal to / inside the source, and a non-empty
+`--out` without a `die-a-rea.build.json` sidecar, unless `--force`. [Evidence:
+`crates/direa-cli/src/build.rs` (`guard_source_and_output`, output-dir check);
+test `refuses_output_over_source`] -> Keep these refusals as errors; do not
+downgrade to warnings. (ADR-0012)

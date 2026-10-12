@@ -217,6 +217,10 @@ We would rather be trusted than impressive.
   RRS report shows exactly what you bought.
 - **Legitimate use only.** Protect software you own or are authorized to protect. This
   is not a tool for hiding malicious behaviour from defenders.
+- **It won't touch your codebase.** `build` never edits sources in place; it writes to a
+  separate `--out` and refuses to overwrite a source artifact or a directory it did not
+  create (pass `--force` to override). `plan` and `build --dry-run` write nothing, and
+  `verify` only reads. See [ADR-0012](docs/adr/ADR-0012-build-never-overwrites-source.md).
 
 See [`docs/THREAT-MODEL.md`](docs/THREAT-MODEL.md) and [`docs/ETHICS.md`](docs/ETHICS.md).
 
@@ -332,11 +336,14 @@ Do the following, and show me the plan before you finish:
      [policy] profile = "high"
      [agent_defense] canaries = ["<project>-<YYYYMMDD>"]
    Keep [tarpit] defaults unless the artifact is size-sensitive.
-4. Preview and harden:
+4. Preview and harden (this never edits my sources; it writes to a separate directory):
      die-a-rea plan
+     die-a-rea build --dry-run          # show what would change, write nothing
      die-a-rea build --out dist-hardened
    Missing adapters are reported, not fatal. Native ELF/PE/Mach-O stripping and the
-   JavaScript adapter are built in; LLVM/Go/.NET/Android adapters are optional.
+   JavaScript adapter are built in; LLVM/Go/.NET/Android adapters are optional. If the
+   output directory already exists and was not made by die-a-rea, the build refuses —
+   use --force only if you are sure.
 5. Score it and gate CI:
      die-a-rea verify --original <artifact-1> --hardened dist-hardened/<artifact-1>
    Add a CI step that fails if the RRS drops below the threshold I choose. The metric

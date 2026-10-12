@@ -59,6 +59,9 @@ enum Command {
         /// Override the randomization seed (reproducible decoy layout).
         #[arg(long)]
         seed: Option<u64>,
+        /// Overwrite an existing output directory die-a-rea did not create.
+        #[arg(long)]
+        force: bool,
         /// Emit machine-readable JSON.
         #[arg(long)]
         json: bool,
@@ -124,8 +127,9 @@ fn main() -> Result<()> {
             out,
             dry_run,
             seed,
+            force,
             json,
-        } => cmd_build(&cli.manifest, out, dry_run, seed, json),
+        } => cmd_build(&cli.manifest, out, dry_run, seed, force, json),
         Command::Verify {
             original,
             hardened,
@@ -233,10 +237,11 @@ fn cmd_build(
     out: PathBuf,
     dry_run: bool,
     seed: Option<u64>,
+    force: bool,
     json: bool,
 ) -> Result<()> {
     let manifest = load_manifest(manifest_path)?;
-    let result = build::build(&manifest, &out, dry_run, seed)?;
+    let result = build::build(&manifest, &out, dry_run, seed, force)?;
     if json {
         println!("{}", serde_json::to_string_pretty(&result)?);
     } else {
