@@ -27,6 +27,10 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-025 | Real-toolchain CI lanes for the adapters (Pluto/ConfuserEx/R8) as optional jobs | Low | Tooling | Closed | `adapter-js` (real) plus optional `adapter-clr`/`adapter-jvm`/`adapter-llvm` jobs; documented in `docs/ADAPTERS.md`. |
 | B-026 | Real control-flow probe (decompiler-based) instead of the x86-prologue proxy | Medium | RRS | Closed | `ExternalControlFlowProbe` via `verify --decompiler`; proxy removed; axis skipped when unset (ADR-0017, K-030). |
 | B-027 | Embed the runtime guard into native artifacts | Low | Runtime | Closed | Linkable C guard at `runtime/guard/` (ADR-0018, K-031); link-time, not injected. |
+| B-028 | CLI verbosity, phase timing, and a transform trace | Medium | Tooling | Closed | `-v`/`-vv`/`-q` with `ui` module and per-phase timing (K-032). |
+| B-029 | Stable error codes and a JSON error envelope | Medium | Tooling | Open | `DireaError::code()` + `--error-format json`. |
+| B-030 | `die-a-rea doctor` readiness command | Medium | Tooling | Open | Report toolchain/adapter/target readiness from the CLI. |
+| B-031 | `die-a-rea explain <id>` for K/ADR/B entries | Low | Tooling | Open | Surface the project memory from the CLI. |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Closed | `direa_core::canary` (gate/canary/decoy) wired into `build`; detector added under B-009 (K-025). |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Closed | `canary::gauntlet` + `die-a-rea canary-selftest` in CI (K-026). |
 | B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
@@ -97,3 +101,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   (ADR-0017, K-030).
 - **B-027 (Closed, commit 29):** linkable native guard library (ADR-0018,
   K-031).
+- **B-028 (Closed, commit 30):** CLI verbosity, timing and transform trace
+  (K-032).

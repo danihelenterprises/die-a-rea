@@ -130,6 +130,13 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-032 — CLI verbosity is `-v` (timing) / `-vv` (trace) / `-q` (quiet).**
+Implemented with a tiny `direa-cli/src/ui.rs` `Ui` (no logging dependency):
+`info` writes diagnostics to stderr gated by level, `out` writes results to
+stdout unless quiet, `timed` reports phase durations. [Evidence:
+`crates/direa-cli/src/ui.rs`; `main.rs` command handlers] -> Add diagnostics via
+`ui.info`, never bare `eprintln!`/`println!`. (Open)
+
 **K-031 — The native guard is a linkable C library, not injected.** `build` never
 patches native binaries; `runtime/guard/direa_guard.c` is compiled and linked by
 the program author, mirroring `direa_core::guard`. [Evidence:

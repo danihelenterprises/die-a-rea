@@ -118,12 +118,12 @@ to bottom unless a dependency says otherwise.
 |---|---|
 | Rust crates | 3 |
 | Tests (`cargo test --all`) | 80 |
-| Backlog items (`B-NNN`) | 27 |
+| Backlog items (`B-NNN`) | 31 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 31 |
+| Durable lessons (`K-NNN`) | 32 |
 | Decision records (`ADR-NNNN`) | 18 |
 | Markdown docs (tracked) | 38 |
-| Commits in history | 29 |
+| Commits in history | 30 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -202,3 +202,4 @@ to bottom unless a dependency says otherwise.
   (ADR-0017, K-030). Closed `B-026`.
 - **B-027 (commit 29):** linkable native guard library `runtime/guard/`
   (ADR-0018, K-031). Closed `B-027`.
+- **B-028 (commit 30):** CLI verbosity/timing/trace (K-032); opened B-029..B-031.

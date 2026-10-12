@@ -7,6 +7,9 @@ use direa_core::manifest::MANIFEST_FILE;
 use direa_core::{plan_manifest, Manifest, Profile};
 
 mod build;
+mod ui;
+
+use ui::Ui;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -19,6 +22,14 @@ struct Cli {
     /// Path to the manifest file.
     #[arg(long, global = true, default_value = MANIFEST_FILE)]
     manifest: PathBuf,
+
+    /// Increase verbosity (repeatable): -v phases/timing, -vv transform trace.
+    #[arg(long, short, global = true, action = clap::ArgAction::Count)]
+    verbose: u8,
+
+    /// Suppress non-error output.
+    #[arg(long, short, global = true)]
+    quiet: bool,
 
     #[command(subcommand)]
     command: Command,
@@ -131,22 +142,23 @@ fn load_manifest(path: &PathBuf) -> Result<Manifest> {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    let ui = Ui::new(cli.verbose, cli.quiet);
     match cli.command {
         Command::Init {
             name,
             targets,
             force,
-        } => cmd_init(&cli.manifest, name, targets, force),
-        Command::Profiles => cmd_profiles(),
-        Command::CanarySelftest { detector, json } => cmd_canary_selftest(detector, json),
-        Command::Plan { json } => cmd_plan(&cli.manifest, json),
+        } => cmd_init(&ui, &cli.manifest, name, targets, force),
+        Command::Profiles => cmd_profiles(&ui),
+        Command::CanarySelftest { detector, json } => cmd_canary_selftest(&ui, detector, json),
+        Command::Plan { json } => cmd_plan(&ui, &cli.manifest, json),
         Command::Build {
             out,
             dry_run,
             seed,
             force,
             json,
-        } => cmd_build(&cli.manifest, out, dry_run, seed, force, json),
+        } => cmd_build(&ui, &cli.manifest, out, dry_run, seed, force, json),
         Command::Verify {
             original,
             hardened,
@@ -158,6 +170,7 @@ fn main() -> Result<()> {
             out,
             json,
         } => cmd_verify(
+            &ui,
             cli.manifest.clone(),
             original,
             hardened,
@@ -172,7 +185,13 @@ fn main() -> Result<()> {
     }
 }
 
-fn cmd_init(path: &PathBuf, name: Option<String>, targets: Vec<String>, force: bool) -> Result<()> {
+fn cmd_init(
+    ui: &Ui,
+    path: &PathBuf,
+    name: Option<String>,
+    targets: Vec<String>,
+    force: bool,
+) -> Result<()> {
     if path.exists() && !force {
         bail!(
             "{} already exists (use --force to overwrite)",
@@ -187,15 +206,16 @@ fn cmd_init(path: &PathBuf, name: Option<String>, targets: Vec<String>, force: b
     });
     let content = Manifest::starter(&name, &targets);
     std::fs::write(path, content).with_context(|| format!("writing {}", path.display()))?;
-    println!("wrote {}", path.display());
+    ui.info(2, format!("starter manifest for project '{name}'"));
+    ui.out(format!("wrote {}", path.display()));
     Ok(())
 }
 
-fn cmd_profiles() -> Result<()> {
-    println!(
+fn cmd_profiles(ui: &Ui) -> Result<()> {
+    ui.out(format!(
         "{:<10} {:<10} {:<10} {:<12} {:<10} {:<10}",
         "profile", "symbols", "strings", "controlflow", "runtime", "agent"
-    );
+    ));
     for profile in [
         Profile::Low,
         Profile::Medium,
@@ -203,7 +223,7 @@ fn cmd_profiles() -> Result<()> {
         Profile::Paranoid,
     ] {
         let p = profile.resolve();
-        println!(
+        ui.out(format!(
             "{:<10} {:<10} {:<10} {:<12} {:<10} {:<10}",
             profile.as_str(),
             p.strip_symbols,
@@ -217,7 +237,7 @@ fn cmd_profiles() -> Result<()> {
             } else {
                 "notice"
             },
-        );
+        ));
     }
     Ok(())
 }
@@ -243,7 +263,7 @@ fn run_detector(command: &str, text: &str) -> bool {
     child.wait().map(|s| s.success()).unwrap_or(false)
 }
 
-fn cmd_canary_selftest(detector: Option<String>, json: bool) -> Result<()> {
+fn cmd_canary_selftest(ui: &Ui, detector: Option<String>, json: bool) -> Result<()> {
     let report = match &detector {
         Some(cmd) => {
             let hook = |s: &str| run_detector(cmd, s);
@@ -252,17 +272,17 @@ fn cmd_canary_selftest(detector: Option<String>, json: bool) -> Result<()> {
         None => direa_core::canary::gauntlet(),
     };
     if json {
-        println!("{}", serde_json::to_string_pretty(&report)?);
+        ui.out(serde_json::to_string_pretty(&report)?);
     } else {
-        println!(
+        ui.out(format!(
             "adversarial detected: {}/{}",
             report.adversarial_detected, report.adversarial_total
-        );
-        println!(
+        ));
+        ui.out(format!(
             "own payloads flagged: {}/{}",
             report.payload_flagged, report.payload_total
-        );
-        println!("{}", if report.passed { "PASS" } else { "FAIL" });
+        ));
+        ui.out(if report.passed { "PASS" } else { "FAIL" });
     }
     if !report.passed {
         bail!("canary gauntlet failed: the detector missed adversarial samples");
@@ -270,39 +290,43 @@ fn cmd_canary_selftest(detector: Option<String>, json: bool) -> Result<()> {
     Ok(())
 }
 
-fn cmd_plan(manifest_path: &PathBuf, json: bool) -> Result<()> {
+fn cmd_plan(ui: &Ui, manifest_path: &PathBuf, json: bool) -> Result<()> {
     let manifest = load_manifest(manifest_path)?;
     let registry = direa_core::planner::default_registry();
-    let plans = plan_manifest(&manifest, &registry);
+    let plans = ui.timed(1, "plan", || plan_manifest(&manifest, &registry));
 
     if json {
-        println!("{}", serde_json::to_string_pretty(&plans)?);
+        ui.out(serde_json::to_string_pretty(&plans)?);
         return Ok(());
     }
 
     if plans.is_empty() {
-        println!("no targets configured in {}", manifest_path.display());
+        ui.out(format!(
+            "no targets configured in {}",
+            manifest_path.display()
+        ));
         return Ok(());
     }
     for plan in &plans {
-        println!("target: {} ({})", plan.target, plan.kind.as_str());
+        ui.out(format!("target: {} ({})", plan.target, plan.kind.as_str()));
         for step in &plan.steps {
-            println!(
+            ui.out(format!(
                 "  - {:<14} {:<18} {}",
                 step.adapter, step.action, step.detail
-            );
+            ));
         }
         if !plan.missing.is_empty() {
-            println!(
+            ui.out(format!(
                 "  ! missing adapters (install for deeper protection): {}",
                 plan.missing.join(", ")
-            );
+            ));
         }
     }
     Ok(())
 }
 
 fn cmd_build(
+    ui: &Ui,
     manifest_path: &PathBuf,
     out: PathBuf,
     dry_run: bool,
@@ -311,17 +335,33 @@ fn cmd_build(
     json: bool,
 ) -> Result<()> {
     let manifest = load_manifest(manifest_path)?;
-    let result = build::build(&manifest, &out, dry_run, seed, force)?;
+    let result = ui.timed(1, "build", || {
+        build::build(&manifest, &out, dry_run, seed, force)
+    })?;
+
+    // Transform trace at -vv.
+    if !json && ui.verbosity >= 2 {
+        for target in &result.targets {
+            ui.info(
+                2,
+                format_args!("{} ({}) -> {}", target.target, target.kind, target.output),
+            );
+            for action in &target.actions {
+                ui.info(2, format_args!("  - {action}"));
+            }
+        }
+    }
+
     if json {
-        println!("{}", serde_json::to_string_pretty(&result)?);
+        ui.out(serde_json::to_string_pretty(&result)?);
     } else {
         for note in &result.notes {
-            println!("{note}");
+            ui.out(note);
         }
         if dry_run {
-            println!("dry run: no files written");
+            ui.out("dry run: no files written");
         } else {
-            println!("hardened output: {}", result.output_dir.display());
+            ui.out(format!("hardened output: {}", result.output_dir.display()));
         }
     }
     Ok(())
@@ -329,6 +369,7 @@ fn cmd_build(
 
 #[allow(clippy::too_many_arguments)]
 fn cmd_verify(
+    ui: &Ui,
     manifest_path: PathBuf,
     original: PathBuf,
     hardened: Option<PathBuf>,
@@ -358,28 +399,34 @@ fn cmd_verify(
         opts.signatures = manifest.runtime.instrumentation_signatures;
     }
 
-    let run = direa_verify::run(&opts).map_err(|e| anyhow::anyhow!(e))?;
+    let run = ui.timed(1, "verify", || {
+        direa_verify::run(&opts).map_err(|e| anyhow::anyhow!(e))
+    })?;
     let report = &run.report;
 
     if json {
-        println!("{}", serde_json::to_string_pretty(report)?);
+        ui.out(serde_json::to_string_pretty(report)?);
     } else {
-        println!("target: {}", report.target);
-        println!("RRS: {}/100 (grade {})", report.rrs, report.grade.as_str());
+        ui.out(format!("target: {}", report.target));
+        ui.out(format!(
+            "RRS: {}/100 (grade {})",
+            report.rrs,
+            report.grade.as_str()
+        ));
         for m in &report.measurements {
             let delta = m.delta();
-            println!(
+            ui.out(format!(
                 "  {:<30} exposure {:.2} -> {:.2}  (delta {:+.2})",
                 m.axis.as_str(),
                 m.baseline,
                 m.hardened,
                 delta
-            );
+            ));
         }
         if !report.notes.is_empty() {
-            println!("\nnotes:");
+            ui.out("\nnotes:");
             for note in &report.notes {
-                println!("  - {note}");
+                ui.out(format!("  - {note}"));
             }
         }
     }
@@ -388,7 +435,7 @@ fn cmd_verify(
         std::fs::write(&path, serde_json::to_string_pretty(report)?)
             .with_context(|| format!("writing {}", path.display()))?;
         if !json {
-            println!("\nwrote report to {}", path.display());
+            ui.out(format!("\nwrote report to {}", path.display()));
         }
     }
     Ok(())
