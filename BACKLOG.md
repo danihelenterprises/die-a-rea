@@ -27,7 +27,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
 | B-011 | Add `CONTRIBUTING.md` and `CHANGELOG.md` | Low | Docs | Closed | Both added and indexed in `docs/README.md`. |
 | B-012 | Declare MSRV (`rust-version`) in the workspace | Low | Build | Closed | `rust-version = "1.79"` in `[workspace.package]`, inherited by every crate; toolchain recorded as K-022. |
-| B-013 | Validate and bound deceptive `agent_decoys` payloads before any default use | Medium | Agent | Open | `docs/ETHICS.md` and ADR-0006 keep deception opt-in; depends on B-009. |
+| B-013 | Validate and bound deceptive `agent_decoys` payloads before any default use | Medium | Agent | Closed | Opt-in, capped, sanitized, gauntlet-validated (ADR-0016). |
 | B-014 | Strengthen the docs-check counter-duplication heuristic | Low | Tooling | Closed | Fatal by default, broader labels, and `--self-test` (wired into CI). |
 | B-015 | Extend `native-post` to Mach-O DWARF sections and fat containers | Medium | Adapters | Closed | `strip_fat` iterates slices; `__DWARF` section data zeroed and names scrubbed; `detect` recognises fat magics (K-024). |
 | B-016 | Extend `native-post` to PE resources and the rich header | Low | Adapters | Closed | Rich header fingerprint stripped; resources intentionally preserved as runtime-needed (K-023). |
@@ -77,3 +77,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   canary tokens and bounded decoy text; `build` consumes them (K-025).
 - **B-009 (Closed, commit 20):** detector gauntlet (`canary::gauntlet`,
   `canary-selftest`) wired into CI (K-026).
+- **B-013 (Closed, commit 21):** deceptive decoys bounded and sanitized, recorded
+  in ADR-0016.

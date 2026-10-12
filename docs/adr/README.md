@@ -31,5 +31,6 @@ file, id `ADR-NNNN`, never reused.
 | [ADR-0013](ADR-0013-post-build-health-check.md) | Build runs a post-build health check | Accepted |
 | [ADR-0014](ADR-0014-runtime-instrumentation-measured-from-environment.md) | Runtime instrumentation is measured from the environment | Accepted |
 | [ADR-0015](ADR-0015-docker-toolchain.md) | Ship a Docker toolchain | Accepted |
+| [ADR-0016](ADR-0016-bound-deceptive-decoys.md) | Deceptive decoys are opt-in, bounded, and gauntlet-validated | Accepted |
 
 Template: [0000-template.md](0000-template.md).

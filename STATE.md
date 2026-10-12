@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 74 |
+| Tests (`cargo test --all`) | 75 |
 | Backlog items (`B-NNN`) | 22 |
 | Open backlog items (High) | 1 |
 | Durable lessons (`K-NNN`) | 26 |
-| Decision records (`ADR-NNNN`) | 15 |
-| Markdown docs (tracked) | 34 |
-| Commits in history | 20 |
+| Decision records (`ADR-NNNN`) | 16 |
+| Markdown docs (tracked) | 35 |
+| Commits in history | 21 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -185,3 +185,5 @@ to bottom unless a dependency says otherwise.
   (K-025). Closed `B-008`.
 - **B-009 (commit 20):** detector gauntlet + `canary-selftest` in CI (K-026).
   Closed `B-009`.
+- **B-013 (commit 21):** deceptive decoys bounded/sanitized and recorded in
+  ADR-0016. Closed `B-013`.

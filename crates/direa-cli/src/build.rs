@@ -30,6 +30,9 @@ const MAX_DECOY_FUNCTIONS: u32 = 20_000;
 const MAX_DECOY_STRINGS: u32 = 50_000;
 const MAX_DECOY_FILES: u32 = 2_000;
 const MAX_DEPTH: u32 = 40;
+/// Operator-supplied deceptive payloads are opt-in and hard-bounded (ADR-0016).
+const MAX_CUSTOM_PAYLOADS: usize = 32;
+const MAX_CUSTOM_PAYLOAD_LEN: usize = 4096;
 
 #[derive(Debug, Serialize)]
 pub struct BuildResult {
@@ -811,8 +814,9 @@ fn generate_js_bundle(
         for _ in 0..tp.honeypots {
             out.push_str(&gen_honeypot(rng));
         }
-        for payload in &tp.custom_payloads {
-            out.push_str(&format!("/* {} */\n", sanitize_comment(payload)));
+        for payload in tp.custom_payloads.iter().take(MAX_CUSTOM_PAYLOADS) {
+            let bounded: String = payload.chars().take(MAX_CUSTOM_PAYLOAD_LEN).collect();
+            out.push_str(&format!("/* {} */\n", sanitize_comment(&bounded)));
         }
         let (padding, bytes) = generate_padding(rng, tp.padding_kb, tp.max_total_kb, notice);
         out.push_str(&padding);
@@ -1062,6 +1066,31 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
         let elsewhere = dir.join("out").join("app.js");
         assert!(guard_source_and_output(&src, &elsewhere).is_ok());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn custom_payloads_are_bounded_and_sanitized() {
+        let policy = direa_core::Profile::Paranoid.resolve();
+        let rz = Randomization {
+            decoy_functions: 0,
+            decoy_strings: 0,
+            depth_bomb: 0,
+            ..Default::default()
+        };
+        let big = "x".repeat(MAX_CUSTOM_PAYLOAD_LEN + 50);
+        let tp = Tarpit {
+            enabled: true,
+            padding_kb: 0,
+            honeypots: 0,
+            custom_payloads: vec!["a*/b".into(), big],
+            ..Default::default()
+        };
+        let (out, _) = generate_js_bundle(&mut Rng::new(1), &policy, &rz, &tp, "n");
+        assert!(out.contains("a* /b"), "payload comment must be sanitized");
+        assert!(
+            !out.contains(&"x".repeat(MAX_CUSTOM_PAYLOAD_LEN + 1)),
+            "payload must be truncated"
+        );
     }
 
     #[test]
