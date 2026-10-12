@@ -14,7 +14,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use direa_core::adapter::{AdapterOp, AdapterRequest, SubprocessAdapter};
 use direa_core::native_post::{strip_symbols, StripReport};
 use direa_core::planner::detect_kind;
@@ -25,6 +25,11 @@ use direa_core::{
     TargetMetadata, Tarpit,
 };
 use serde::Serialize;
+
+/// Build a coded refusal so the CLI can emit a stable error code (B-029).
+fn refused(code: &'static str, message: String) -> anyhow::Error {
+    direa_core::DireaError::Refused { code, message }.into()
+}
 
 const MAX_DECOY_FUNCTIONS: u32 = 20_000;
 const MAX_DECOY_STRINGS: u32 = 50_000;
@@ -124,10 +129,13 @@ pub fn build(
             .map(|mut d| d.next().is_some())
             .unwrap_or(false);
         if non_empty && !has_sidecar {
-            bail!(
-                "output directory {} already exists and was not created by die-a-rea; pass --force to write into it (or choose a fresh --out)",
-                out.display()
-            );
+            return Err(refused(
+                "output_dir_foreign",
+                format!(
+                    "output directory {} already exists and was not created by die-a-rea; pass --force to write into it (or choose a fresh --out)",
+                    out.display()
+                ),
+            ));
         }
     }
 
@@ -462,20 +470,26 @@ fn post_build_check(
     verify: &direa_core::Verify,
 ) -> Result<()> {
     if file_or_dir_size(dest).unwrap_or(0) == 0 {
-        bail!(
-            "post-build check failed: hardened artifact {} is empty",
-            dest.display()
-        );
+        return Err(refused(
+            "post_build_empty",
+            format!(
+                "post-build check failed: hardened artifact {} is empty",
+                dest.display()
+            ),
+        ));
     }
     if matches!(
         kind,
         TargetKind::NativeElf | TargetKind::NativeMachO | TargetKind::NativePe | TargetKind::Go
     ) && !same_magic(src, dest)
     {
-        bail!(
-            "post-build check failed: {} no longer carries the source executable magic",
-            dest.display()
-        );
+        return Err(refused(
+            "post_build_magic",
+            format!(
+                "post-build check failed: {} no longer carries the source executable magic",
+                dest.display()
+            ),
+        ));
     }
     if let Some(command) = &verify.command {
         run_check_command(command, dest, out)?;
@@ -524,11 +538,14 @@ fn run_check_command(command: &str, artifact: &Path, out: &Path) -> Result<()> {
         .output()
         .with_context(|| format!("running post-build command: {expanded}"))?;
     if !output.status.success() {
-        bail!(
-            "post-build command failed ({}): {}",
-            output.status,
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
+        return Err(refused(
+            "verify_command_failed",
+            format!(
+                "post-build command failed ({}): {}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr).trim()
+            ),
+        ));
     }
     Ok(())
 }
@@ -547,11 +564,14 @@ fn check_js_syntax(dest: &Path) -> Result<()> {
             .output()
             .with_context(|| format!("running node --check on {}", file.display()))?;
         if !output.status.success() {
-            bail!(
-                "post-build JS syntax check failed for {}: {}",
-                file.display(),
-                String::from_utf8_lossy(&output.stderr).trim()
-            );
+            return Err(refused(
+                "js_syntax_failed",
+                format!(
+                    "post-build JS syntax check failed for {}: {}",
+                    file.display(),
+                    String::from_utf8_lossy(&output.stderr).trim()
+                ),
+            ));
         }
     }
     Ok(())
@@ -581,16 +601,22 @@ fn guard_source_and_output(src: &Path, dest: &Path) -> Result<()> {
     let a = absolute(src);
     let d = absolute(dest);
     if d == a {
-        bail!(
-            "refusing to write output over the source artifact ({}); choose an --out outside the source",
-            src.display()
-        );
+        return Err(refused(
+            "output_over_source",
+            format!(
+                "refusing to write output over the source artifact ({}); choose an --out outside the source",
+                src.display()
+            ),
+        ));
     }
     if a.is_dir() && d.starts_with(&a) {
-        bail!(
-            "refusing to write output inside the source directory ({}); choose an --out outside it",
-            src.display()
-        );
+        return Err(refused(
+            "output_inside_source",
+            format!(
+                "refusing to write output inside the source directory ({}); choose an --out outside it",
+                src.display()
+            ),
+        ));
     }
     Ok(())
 }

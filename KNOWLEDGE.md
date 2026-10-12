@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-033 — Errors carry stable codes; the CLI prints them.** `DireaError::code()`
+returns a stable string (e.g. `manifest_parse`, `output_over_source`); build
+safety refusals use `DireaError::Refused { code, message }`. The CLI reports
+`error[code]: …` or a `{"error":{...}}` envelope via `--error-format json`.
+[Evidence: `crates/direa-core/src/error.rs` (test `codes_are_stable`);
+`crates/direa-cli/src/main.rs` (`report_error`)] -> Give every new refusal a code;
+never a bare string with no code. (Open)
+
 **K-032 — CLI verbosity is `-v` (timing) / `-vv` (trace) / `-q` (quiet).**
 Implemented with a tiny `direa-cli/src/ui.rs` `Ui` (no logging dependency):
 `info` writes diagnostics to stderr gated by level, `out` writes results to

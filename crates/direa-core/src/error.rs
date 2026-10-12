@@ -30,8 +30,47 @@ pub enum DireaError {
     #[error("adapter `{adapter}` failed: {message}")]
     AdapterFailed { adapter: String, message: String },
 
+    /// A refusal with a stable, machine-readable code (e.g. build safety guards).
+    #[error("{message}")]
+    Refused { code: &'static str, message: String },
+
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }
 
+impl DireaError {
+    /// Stable, machine-readable error code.
+    pub fn code(&self) -> &'static str {
+        match self {
+            DireaError::ManifestRead { .. } => "manifest_read",
+            DireaError::ManifestParse(_) => "manifest_parse",
+            DireaError::Serialize(_) => "serialize",
+            DireaError::Invalid(_) => "invalid_config",
+            DireaError::TargetMissing(_) => "target_missing",
+            DireaError::NoAdapter(_) => "no_adapter",
+            DireaError::AdapterFailed { .. } => "adapter_failed",
+            DireaError::Refused { code, .. } => code,
+            DireaError::Io(_) => "io",
+        }
+    }
+}
+
 pub type Result<T> = std::result::Result<T, DireaError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn codes_are_stable() {
+        assert_eq!(DireaError::Invalid("x".into()).code(), "invalid_config");
+        assert_eq!(
+            DireaError::Refused {
+                code: "output_over_source",
+                message: "x".into()
+            }
+            .code(),
+            "output_over_source"
+        );
+    }
+}

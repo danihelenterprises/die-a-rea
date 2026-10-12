@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{bail, Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 use direa_core::manifest::MANIFEST_FILE;
 use direa_core::{plan_manifest, Manifest, Profile};
@@ -31,8 +31,18 @@ struct Cli {
     #[arg(long, short, global = true)]
     quiet: bool,
 
+    /// Format for error output.
+    #[arg(long, global = true, value_enum, default_value_t = ErrorFormat::Human)]
+    error_format: ErrorFormat,
+
     #[command(subcommand)]
     command: Command,
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug)]
+enum ErrorFormat {
+    Human,
+    Json,
 }
 
 #[derive(Subcommand, Debug)]
@@ -132,16 +142,52 @@ fn default_rea_command() -> Vec<String> {
 
 fn load_manifest(path: &PathBuf) -> Result<Manifest> {
     if !path.exists() {
-        bail!(
-            "manifest not found at {} - run `die-a-rea init` first",
-            path.display()
-        );
+        return Err(direa_core::DireaError::Refused {
+            code: "manifest_missing",
+            message: format!(
+                "manifest not found at {} - run `die-a-rea init` first",
+                path.display()
+            ),
+        }
+        .into());
     }
     Manifest::load(path).with_context(|| format!("loading {}", path.display()))
 }
 
-fn main() -> Result<()> {
+fn main() {
     let cli = Cli::parse();
+    let error_format = cli.error_format;
+    if let Err(err) = run(cli) {
+        report_error(&err, error_format);
+        std::process::exit(1);
+    }
+}
+
+/// Print an error with a stable code, in human or JSON form.
+fn report_error(err: &anyhow::Error, format: ErrorFormat) {
+    let code = err
+        .chain()
+        .find_map(|cause| cause.downcast_ref::<direa_core::DireaError>())
+        .map(|e| e.code())
+        .unwrap_or("error");
+    match format {
+        ErrorFormat::Human => {
+            eprintln!("error[{code}]: {err}");
+            for cause in err.chain().skip(1) {
+                eprintln!("  caused by: {cause}");
+            }
+        }
+        ErrorFormat::Json => {
+            let causes: Vec<String> = err.chain().skip(1).map(|c| c.to_string()).collect();
+            let envelope = serde_json::json!({
+                "error": { "code": code, "message": err.to_string(), "causes": causes }
+            });
+            eprintln!("{}", envelope);
+        }
+    }
+}
+
+fn run(cli: Cli) -> Result<()> {
     let ui = Ui::new(cli.verbose, cli.quiet);
     match cli.command {
         Command::Init {
