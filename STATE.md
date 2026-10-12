@@ -88,7 +88,8 @@ to bottom unless a dependency says otherwise.
   decoys + bounded tarpits, and writes `DIR/die-a-rea.build.json`.
 - `die-a-rea build` on a native ELF/PE/Mach-O target runs the built-in
   `native-post` stripper (symbols/debug/build metadata); e.g. a `gcc -g` ELF loses
-  `.symtab`/`.debug_*` and the debug axis moves 1.00 -> 0.00 (ADR-0008).
+  `.symtab`/`.debug_*` and the debug axis moves 1.00 -> 0.00 (ADR-0008). Go
+  binaries also lose their build-info blob and build ID (B-002, K-019).
 - `die-a-rea build` on a JS target runs the external `js` adapter when
   `DIREA_JS_ADAPTER` or `direa-js` is available (ADR-0009); e.g. a bundle
   obfuscated by `javascript-obfuscator`. Absence is a note, not an error.
@@ -115,13 +116,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 54 |
+| Tests (`cargo test --all`) | 56 |
 | Backlog items (`B-NNN`) | 20 |
-| Open backlog items (High) | 3 |
-| Durable lessons (`K-NNN`) | 18 |
+| Open backlog items (High) | 2 |
+| Durable lessons (`K-NNN`) | 19 |
 | Decision records (`ADR-NNNN`) | 13 |
 | Markdown docs (tracked) | 29 |
-| Commits in history | 9 |
+| Commits in history | 10 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -158,3 +159,6 @@ to bottom unless a dependency says otherwise.
 - **B-020 (commit 9):** `build` health-checks each hardened artifact (non-empty +
   native magic) and runs the opt-in `[verify]` command / `js_syntax`; failures
   fail the build (ADR-0013, K-018). Closed `B-020`.
+- **B-002 (commit 10):** built-in Go build-info/ID scrub in `native_post`
+  (K-019); `garble` remains bring-your-own for source obfuscation. Closed
+  `B-002`.

@@ -156,6 +156,8 @@ pub fn strip_symbols(data: &mut [u8]) -> StripReport {
         NativeFormat::MachO => strip_macho(data, &mut report),
         NativeFormat::Unknown => Ok(()),
     };
+    // Go build metadata is format-agnostic (it can live in ELF, PE or Mach-O).
+    strip_go_build_info(data, &mut report);
     if result.is_err() {
         // Unsupported layout: leave the buffer untouched and report no change.
         report.changed = false;
@@ -177,6 +179,8 @@ fn elf_is_target(name: &str) -> bool {
             | ".note.gnu.build-id"
             | ".gnu_debuglink"
             | ".gdb_index"
+            | ".go.buildinfo"
+            | ".note.go.buildid"
     ) || name.starts_with(".debug")
         || name.starts_with(".zdebug")
 }
@@ -314,6 +318,49 @@ fn strip_elf(data: &mut [u8], report: &mut StripReport) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// The Go build-info magic. External tools (and REA's Go provider) locate the
+/// embedded compiler version, module list, replacements and build settings here.
+const GO_BUILDINFO_MAGIC: &[u8] = b"\xff Go buildinf:";
+
+fn find_sub(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    if needle.is_empty() || haystack.len() < needle.len() {
+        return None;
+    }
+    haystack.windows(needle.len()).position(|w| w == needle)
+}
+
+/// Remove Go build metadata: the `.go.buildinfo` magic and the build-ID strings
+/// `Go build ID: "..."`. The runtime does not need the magic (it uses
+/// `runtime.modinfo`), so this hides the facts without changing behaviour.
+fn strip_go_build_info(data: &mut [u8], report: &mut StripReport) {
+    // Magic itself.
+    if find_sub(data, GO_BUILDINFO_MAGIC).is_some() {
+        scrub_all(data, GO_BUILDINFO_MAGIC, 0);
+        report.note("go build info magic", GO_BUILDINFO_MAGIC.len() as u64);
+    }
+    // Build ID strings, both quote styles.
+    for quote in [b'"', b'\''] {
+        let mut needle = b"Go build ID: ".to_vec();
+        needle.push(quote);
+        let mut from = 0usize;
+        while let Some(rel) = find_sub(&data[from..], &needle) {
+            let start = from + rel;
+            let id_start = start + needle.len();
+            let Some(rel_end) = data[id_start..].iter().position(|&b| b == quote) else {
+                break;
+            };
+            let end = id_start + rel_end + 1;
+            for b in &mut data[start..end] {
+                if *b != 0 {
+                    *b = 0;
+                }
+            }
+            report.note("go build ID", (end - start) as u64);
+            from = end;
+        }
+    }
 }
 
 /// Overwrite every occurrence of `needle` in `data` with `fill`, preserving NUL
@@ -683,6 +730,30 @@ mod tests {
             "string table must be zeroed"
         );
         assert_eq!(u32::from_le_bytes(d[44..48].try_into().unwrap()), 0); // nsyms
+    }
+
+    #[test]
+    fn go_build_info_scrubbed() {
+        let mut d = vec![0u8; 256];
+        d[0x40..0x40 + 14].copy_from_slice(b"\xff Go buildinf:");
+        let id = b"Go build ID: \"abc123-def456\"";
+        d[0x80..0x80 + id.len()].copy_from_slice(id);
+        let r = strip_symbols(&mut d);
+        assert!(r.changed);
+        assert!(r.removed.iter().any(|s| s.contains("go build info")));
+        assert!(r.removed.iter().any(|s| s.contains("go build ID")));
+        assert!(find(&d, b"Go buildinf").is_none());
+        assert!(find(&d, b"abc123-def456").is_none());
+    }
+
+    #[test]
+    fn non_go_binary_is_unaffected_by_go_scrub() {
+        let mut d = elf_fixture();
+        let before_len = d.len();
+        let r = strip_symbols(&mut d);
+        // ELF stripping still happens; no Go magic present, so no go note.
+        assert!(!r.removed.iter().any(|s| s.contains("go build")));
+        assert_eq!(d.len(), before_len);
     }
 
     #[test]

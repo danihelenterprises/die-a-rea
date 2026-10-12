@@ -14,7 +14,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | ID | Item | Severity | Area/Milestone | Status | Notes |
 |---|---|---|---|---|---|
 | B-001 | Implement the LLVM adapter (C/C++/Rust/Swift) wrapping Pluto/O-MVLL passes | High | Adapters | Open | `planner.rs` registers `llvm` → `direa-llvm`, which does not exist yet. |
-| B-002 | Implement the Go adapter (garble: identifiers, literals, strip build info) | High | Adapters | Open | REA has a built-in Go provider; stripping build info is the direct counter. |
+| B-002 | Implement the Go adapter (garble: identifiers, literals, strip build info) | High | Adapters | Closed | Built-in Go build-info/ID scrub in `native_post` (K-019); source-level identifier/literal obfuscation via `garble` remains bring-your-own. |
 | B-003 | Implement the JavaScript/Electron adapter (javascript-obfuscator + bytenode/asarmor) | High | Adapters | Closed | Adapter implemented, wired, tested (ADR-0009). Its `string-exposure` clause passes: obfuscated 5/9 baseline tokens survive vs 9/9 for the built-in path (ADR-0011). |
 | B-004 | Implement built-in `native-post` stripping (symbols/debug/build metadata) for ELF/Mach-O/PE | High | Adapters | Closed | In-process `native_post.rs` (ELF/PE/Mach-O); wired via `harden_native`. Mach-O DWARF/fat + PE resources remain follow-ups. |
 | B-005 | Implement the .NET adapter (ConfuserEx driver) | Medium | Adapters | Open | Registry lists `clr`; no implementation. |
@@ -52,3 +52,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 - **B-020 (Closed, commit 9):** `build` health-checks the hardened artifact and
   fails on breakage — non-empty + native magic, plus opt-in `[verify]` command and
   `js_syntax` (ADR-0013, K-018).
+- **B-002 (Closed, commit 10):** built-in Go build-info/ID scrub in `native_post`
+  (K-019). `garble` remains bring-your-own for identifier/literal obfuscation.

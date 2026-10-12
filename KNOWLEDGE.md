@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-019 — Go build metadata is format-agnostic.** The `\xff Go buildinf:` blob
+and `Go build ID: "..."` can appear in Go binaries of any container, so
+`native_post` scrubs them by scanning for every format (and treats
+`.go.buildinfo` / `.note.go.buildid` as ELF target sections). [Evidence:
+`crates/direa-core/src/native_post.rs` (`strip_go_build_info`); tests
+`go_build_info_scrubbed`, `non_go_binary_is_unaffected_by_go_scrub`] -> Strip Go
+metadata by scan, not by container. (ADR-0008)
+
 **K-018 — `build` health-checks the hardened artifact and fails on breakage.**
 After each target (never in `--dry-run`) it verifies non-emptiness and that native
 magic is preserved, then runs the opt-in `[verify] command` and, if enabled,

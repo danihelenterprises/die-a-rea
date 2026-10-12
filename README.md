@@ -272,7 +272,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - Target detection (ELF, Mach-O, PE, .NET, Go, JS, Electron/ASAR, WASM, APK).
 - Planning with an adapter registry and missing-adapter reporting.
 - Safe hardening: source-map removal, comment stripping, notice/canary injection.
-- Built-in `native-post`: in-process symbol/debug/build-metadata stripping for ELF/PE/Mach-O (ADR-0008).
+- Built-in `native-post`: in-process symbol/debug/build-metadata stripping for ELF/PE/Mach-O, plus Go build-info/ID scrubbing (ADR-0008, K-019).
 - JavaScript adapter: external `direa-js` (javascript-obfuscator) runs over hardened JS/Electron output when installed (ADR-0009).
 - Seeded randomization: decoy functions/strings/files, depth bombs, reproducible via `--seed`.
 - Tarpits: bounded padding, honeypots, honest prompt gate, optional custom payloads.
@@ -355,8 +355,9 @@ Do the following, and show me the plan before you finish:
      die-a-rea plan
      die-a-rea build --dry-run          # show what would change, write nothing
      die-a-rea build --out dist-hardened
-   Missing adapters are reported, not fatal. Native ELF/PE/Mach-O stripping and the
-   JavaScript adapter are built in; LLVM/Go/.NET/Android adapters are optional. If the
+   Missing adapters are reported, not fatal. Native ELF/PE/Mach-O stripping (incl.
+   Go build info) and the JavaScript adapter are built in; the LLVM/.NET/Android
+   adapters and `garble` for deep Go obfuscation are optional. If the
    output directory already exists and was not made by die-a-rea, the build refuses —
    use --force only if you are sure.
 5. Score it and gate CI:
