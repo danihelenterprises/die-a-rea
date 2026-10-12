@@ -628,6 +628,10 @@ fn harden_text_file(
         out.push_str(&decoy);
         stats = s;
     }
+    if policy.anti_instrumentation {
+        out.push('\n');
+        out.push_str(direa_core::guard::JS_GUARD_SOURCE);
+    }
 
     if let Some(parent) = dest.parent() {
         if !parent.as_os_str().is_empty() {
@@ -698,6 +702,10 @@ fn harden_tree(
                 out.push_str(&format!("/* direa-canary-{i}: {canary} */\n"));
             }
             out.push_str(&body);
+            if policy.anti_instrumentation {
+                out.push('\n');
+                out.push_str(direa_core::guard::JS_GUARD_SOURCE);
+            }
             std::fs::write(&target, out)
                 .with_context(|| format!("writing {}", target.display()))?;
         } else {
@@ -1064,6 +1072,51 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
             &Default::default()
         )
         .is_err());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn js_guard_is_injected_when_anti_instrumentation() {
+        let dir = std::env::temp_dir().join(format!("direa-guard-embed-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("app.js");
+        std::fs::write(&src, "var x = 1;\n").unwrap();
+        let rz = Randomization {
+            decoy_functions: 0,
+            decoy_strings: 0,
+            depth_bomb: 0,
+            ..Default::default()
+        };
+        let tp = Tarpit {
+            enabled: false,
+            ..Default::default()
+        };
+
+        let high = direa_core::Profile::High.resolve();
+        let dest_high = dir.join("high.js");
+        harden_text_file(
+            &src,
+            &dest_high,
+            &high,
+            "n",
+            &[],
+            &rz,
+            &tp,
+            &mut Rng::new(1),
+        )
+        .unwrap();
+        assert!(std::fs::read_to_string(&dest_high)
+            .unwrap()
+            .contains("__DIREA_GUARD__"));
+
+        let low = direa_core::Profile::Low.resolve();
+        let dest_low = dir.join("low.js");
+        harden_text_file(&src, &dest_low, &low, "n", &[], &rz, &tp, &mut Rng::new(1)).unwrap();
+        assert!(!std::fs::read_to_string(&dest_low)
+            .unwrap()
+            .contains("__DIREA_GUARD__"));
 
         let _ = std::fs::remove_dir_all(&dir);
     }

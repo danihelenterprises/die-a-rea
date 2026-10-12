@@ -130,6 +130,16 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-028 — The runtime guard is embedded into JS artifacts.** When
+`policy.anti_instrumentation` is set, `build` appends `guard::JS_GUARD_SOURCE` to
+JS/Electron files (single-file and tree); it is behavior-safe (records
+`globalThis.__DIREA_GUARD__`, never throws/blocks). Native embedding needs a
+linked library and is tracked as B-027. [Evidence:
+`crates/direa-core/src/guard.rs` (`JS_GUARD_SOURCE`, test
+`js_guard_source_is_well_formed`); `crates/direa-cli/src/build.rs`
+(`harden_text_file`/`harden_tree`), test `js_guard_is_injected_when_anti_instrumentation`]
+-> Keep embedded guards behavior-safe and opt-in. (ADR-0014)
+
 **K-027 — External adapters are discovered generically.** `build` iterates the
 registry's external entries for the target kind and resolves each via
 `DIREA_<ID>_ADAPTER` then its command on `PATH`; absence is a note. LLVM is a

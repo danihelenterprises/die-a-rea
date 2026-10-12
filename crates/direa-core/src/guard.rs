@@ -25,6 +25,34 @@ impl GuardReport {
     }
 }
 
+/// A behavior-safe runtime guard for JavaScript/Electron artifacts.
+///
+/// Appended by `build` when `policy.anti_instrumentation` is set. It never
+/// throws, blocks, or changes application logic: it records a result on
+/// `globalThis.__DIREA_GUARD__` and calls `globalThis.__DIREA_ON_INSTRUMENTED__`
+/// if the operator defined it.
+pub const JS_GUARD_SOURCE: &str = r#"/* die-a-rea runtime guard */
+(function () {
+  try {
+    var findings = [];
+    var env = (typeof process !== 'undefined' && process.env) || {};
+    if (env.NODE_OPTIONS && String(env.NODE_OPTIONS).indexOf('--inspect') >= 0) {
+      findings.push('NODE_OPTIONS:--inspect');
+    }
+    if (env.FRIDA) {
+      findings.push('env:FRIDA');
+    }
+    if (typeof globalThis !== 'undefined' && globalThis.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+      findings.push('devtools');
+    }
+    globalThis.__DIREA_GUARD__ = { instrumented: findings.length > 0, findings: findings };
+    if (findings.length > 0 && typeof globalThis.__DIREA_ON_INSTRUMENTED__ === 'function') {
+      globalThis.__DIREA_ON_INSTRUMENTED__(findings);
+    }
+  } catch (_) {}
+})();
+"#;
+
 /// Signatures looked for in process maps and injected-library environment
 /// variables. Kept in sync with `[runtime] instrumentation_signatures`.
 pub const DEFAULT_SIGNATURES: &[&str] = &[
@@ -169,6 +197,13 @@ mod tests {
         let env = vec![("NODE_OPTIONS".to_string(), "--inspect=9229".to_string())];
         let r = classify(None, None, &env, DEFAULT_SIGNATURES);
         assert!(r.instrumented);
+    }
+
+    #[test]
+    fn js_guard_source_is_well_formed() {
+        assert!(JS_GUARD_SOURCE.contains("__DIREA_GUARD__"));
+        assert!(JS_GUARD_SOURCE.contains("__DIREA_ON_INSTRUMENTED__"));
+        assert!(JS_GUARD_SOURCE.contains("--inspect"));
     }
 
     #[test]

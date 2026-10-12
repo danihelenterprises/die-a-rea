@@ -22,6 +22,11 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-007 | Add a runtime guard library and wire the `runtime-instrumentation-exposure` RRS axis | High | Runtime | Closed | `direa_core::guard` + `verify --with-runtime` (ADR-0014, K-020); detects debugger/Frida/inspector from the environment. |
 | B-021 | Honor `[runtime] instrumentation_signatures` in the guard | Low | Runtime | Closed | `guard::detect_with` + `verify` reads the manifest list (empty = built-in defaults). |
 | B-022 | Docker toolchain (runtime + dev images) with robust error handling | Medium | Tooling | Closed | `docker/Dockerfile` (build/runtime/dev), `entrypoint.sh` (fail-fast), `compose.yml` (ADR-0015, K-021). |
+| B-023 | Embed the runtime guard into artifacts (not just the environment) | Medium | Runtime | Closed | Behavior-safe JS/Electron guard injected when `anti_instrumentation` is set (K-028); native embedding tracked as B-027. |
+| B-024 | Pluggable/external detector behind the gauntlet; broaden the corpus | Medium | Agent | Open | Add an external detector command and more injection styles. |
+| B-025 | Real-toolchain CI lanes for the adapters (Pluto/ConfuserEx/R8) as optional jobs | Low | Tooling | Open | Optional CI jobs exercising the external adapters. |
+| B-026 | Real control-flow probe (decompiler-based) instead of the x86-prologue proxy | Medium | RRS | Open | Make the control-flow axis external/opt-in; skip when unconfigured. |
+| B-027 | Embed the runtime guard into native artifacts | Low | Runtime | Open | Requires a linked guard library (C/Rust); JS embedding is done (B-023). |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Closed | `direa_core::canary` (gate/canary/decoy) wired into `build`; detector added under B-009 (K-025). |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Closed | `canary::gauntlet` + `die-a-rea canary-selftest` in CI (K-026). |
 | B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
@@ -83,3 +88,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   reference adapter (K-027).
 - **B-005 (Closed, commit 23):** `.NET` reference adapter (`direa-clr`).
 - **B-006 (Closed, commit 24):** JVM/Android reference adapter (`direa-jvm`).
+- **B-023 (Closed, commit 25):** behavior-safe JS runtime guard embedded by
+  `build` (K-028); native embedding opened as B-027.

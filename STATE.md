@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 76 |
-| Backlog items (`B-NNN`) | 22 |
+| Tests (`cargo test --all`) | 78 |
+| Backlog items (`B-NNN`) | 27 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 27 |
+| Durable lessons (`K-NNN`) | 28 |
 | Decision records (`ADR-NNNN`) | 16 |
 | Markdown docs (tracked) | 35 |
-| Commits in history | 24 |
+| Commits in history | 25 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -193,3 +193,5 @@ to bottom unless a dependency says otherwise.
   Closed `B-005`.
 - **B-006 (commit 24):** JVM/Android reference adapter `adapters/jvm/direa-jvm`.
   Closed `B-006`.
+- **B-023 (commit 25):** embedded the JS runtime guard (K-028); opened `B-027`
+  (native embedding). Closed `B-023`.
