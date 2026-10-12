@@ -42,3 +42,19 @@ jobs:
           fetch-depth: 0
       - name: Documentation invariants
         run: bash tools/docs-check.sh
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build runtime image
+        run: docker build -f docker/Dockerfile --target runtime -t die-a-rea:runtime .
+      - name: Doctor
+        run: docker run --rm die-a-rea:runtime doctor
+      - name: Smoke
+        run: |
+          tmp="$(mktemp -d)"
+          printf 'var a=1;\n//# sourceMappingURL=a.js.map\n' > "$tmp/a.js"
+          docker run --rm -v "$tmp":/work die-a-rea:runtime init --name ci a.js
+          docker run --rm -v "$tmp":/work die-a-rea:runtime build --out dist
+          docker run --rm -v "$tmp":/work die-a-rea:runtime verify --original a.js --hardened dist/a.js --json

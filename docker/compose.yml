@@ -1,0 +1,18 @@
+# Convenience wrapper for the die-a-rea runtime image.
+#
+#   docker compose -f docker/compose.yml build
+#   docker compose -f docker/compose.yml run --rm die-a-rea doctor
+#   docker compose -f docker/compose.yml run --rm die-a-rea plan
+#
+# Mount your project at /work (defaults to the repository root; override with
+# PROJECT_DIR=/path/to/project).
+services:
+  die-a-rea:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runtime
+    image: die-a-rea:runtime
+    working_dir: /work
+    volumes:
+      - "${PROJECT_DIR:-..}:/work"

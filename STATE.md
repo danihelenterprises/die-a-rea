@@ -118,12 +118,12 @@ to bottom unless a dependency says otherwise.
 |---|---|
 | Rust crates | 3 |
 | Tests (`cargo test --all`) | 64 |
-| Backlog items (`B-NNN`) | 21 |
+| Backlog items (`B-NNN`) | 22 |
 | Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 20 |
-| Decision records (`ADR-NNNN`) | 14 |
-| Markdown docs (tracked) | 30 |
-| Commits in history | 11 |
+| Durable lessons (`K-NNN`) | 21 |
+| Decision records (`ADR-NNNN`) | 15 |
+| Markdown docs (tracked) | 32 |
+| Commits in history | 12 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -166,3 +166,6 @@ to bottom unless a dependency says otherwise.
 - **B-007 (commit 11):** `direa_core::guard` + `verify --with-runtime` measure
   runtime instrumentation from the environment (ADR-0014, K-020). Closed `B-007`;
   opened `B-021` (manifest signatures not yet consumed).
+- **B-022 (commit 12):** Docker toolchain (`docker/Dockerfile` runtime/dev
+  targets, fail-fast `entrypoint.sh`, `compose.yml`), wired into CI (ADR-0015,
+  K-021). Closed `B-022`.

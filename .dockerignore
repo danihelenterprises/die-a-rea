@@ -1,0 +1,7 @@
+target
+.git
+.gitignore
+**/*.rs.bk
+dist-hardened
+direa-report.json
+docker/*.md

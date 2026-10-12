@@ -30,6 +30,7 @@ Every tracked document, what it owns, and its role.
 | `docs/adr/README.md` | ADR index and immutability rule | decisions |
 | `docs/adr/0000-template.md` | ADR template | decisions |
 | `docs/adr/ADR-NNNN.md` | Individual immutable decisions | decisions |
+| `../docker/README.md` | Docker toolchain usage (runtime/dev images) | infra |
 
 ## Authority map (fact → owner)
 

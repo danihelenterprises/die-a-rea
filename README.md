@@ -103,6 +103,20 @@ die-a-rea verify --original dist/app.js --with-rea
 
 ---
 
+## Docker
+
+No local toolchain needed — build an image and run it against your project:
+
+```bash
+docker build -f docker/Dockerfile --target runtime -t die-a-rea:runtime .
+docker run --rm -v "$PWD":/work die-a-rea:runtime doctor
+docker run --rm -v "$PWD":/work die-a-rea:runtime build --out dist-hardened
+```
+
+The `runtime` image ships the CLI, Node and the JS adapter; the `dev` image adds
+the Rust toolchain for building/testing. The entrypoint fails fast with clear
+errors. See [`docker/README.md`](docker/README.md).
+
 ## What measurement looks like
 
 ```text
@@ -296,6 +310,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - [Reverse-engineering Resistance Score](docs/RRS.md)
 - [Prior art and upstream projects](docs/PIGGYBACK.md)
 - [Responsible use](docs/ETHICS.md)
+- [Docker toolchain](docker/README.md)
 - [Project memory: authority map and doc-sync](docs/README.md) · [working rules](AGENTS.md) · [state & work order](STATE.md)
 
 ---

@@ -30,5 +30,6 @@ file, id `ADR-NNNN`, never reused.
 | [ADR-0012](ADR-0012-build-never-overwrites-source.md) | Build never overwrites the source or unrelated files | Accepted |
 | [ADR-0013](ADR-0013-post-build-health-check.md) | Build runs a post-build health check | Accepted |
 | [ADR-0014](ADR-0014-runtime-instrumentation-measured-from-environment.md) | Runtime instrumentation is measured from the environment | Accepted |
+| [ADR-0015](ADR-0015-docker-toolchain.md) | Ship a Docker toolchain | Accepted |
 
 Template: [0000-template.md](0000-template.md).

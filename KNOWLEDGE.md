@@ -130,6 +130,16 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-021 — The container's JS adapter needs `NODE_PATH`; the entrypoint must not
+call `fail` inside `$(…)`.** `javascript-obfuscator` is installed globally in the
+images, so `NODE_PATH` must point at the global `node_modules` for `direa-js` to
+`require` it. Separately, a shell function that calls `exit`/`fail` inside a
+command substitution only exits the subshell — locate the CLI with a status
+check, not `exec "$(resolve_cli)"`. [Evidence: `docker/Dockerfile`
+(`ENV NODE_PATH`), `docker/entrypoint.sh` (`resolve_cli`/`run_cli`); verified by
+`docker run … dev doctor`] -> Keep `NODE_PATH` set and always check the status of
+a locating function before `exec`. (ADR-0015)
+
 **K-020 — Runtime instrumentation is detected from the environment; a clean
 environment skips the axis.** `guard::detect` reads `TracerPid`, process maps and
 injected-library env; `verify --with-runtime` adds the axis only when
