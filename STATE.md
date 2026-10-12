@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 79 |
+| Tests (`cargo test --all`) | 80 |
 | Backlog items (`B-NNN`) | 27 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 30 |
-| Decision records (`ADR-NNNN`) | 17 |
-| Markdown docs (tracked) | 37 |
-| Commits in history | 28 |
+| Durable lessons (`K-NNN`) | 31 |
+| Decision records (`ADR-NNNN`) | 18 |
+| Markdown docs (tracked) | 38 |
+| Commits in history | 29 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -200,3 +200,5 @@ to bottom unless a dependency says otherwise.
 - **B-025 (commit 27):** adapter CI lanes + `docs/ADAPTERS.md`. Closed `B-025`.
 - **B-026 (commit 28):** external decompiler control-flow axis; proxy removed
   (ADR-0017, K-030). Closed `B-026`.
+- **B-027 (commit 29):** linkable native guard library `runtime/guard/`
+  (ADR-0018, K-031). Closed `B-027`.

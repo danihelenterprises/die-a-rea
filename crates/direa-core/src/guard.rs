@@ -228,6 +228,42 @@ mod tests {
     }
 
     #[test]
+    fn native_guard_compiles_and_runs() {
+        if crate::adapter::which("cc").is_none() {
+            return; // no C compiler available; skip
+        }
+        let manifest = env!("CARGO_MANIFEST_DIR");
+        let src = format!("{manifest}/../../runtime/guard/direa_guard.c");
+        let inc = format!("{manifest}/../../runtime/guard");
+        let dir = std::env::temp_dir().join(format!("direa-cguard-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let main_c = dir.join("main.c");
+        std::fs::write(
+            &main_c,
+            "#include <stdio.h>\n#include \"direa_guard.h\"\n\
+             int main(void){struct direa_guard_result r; \
+             int v=direa_guard_check(&r); \
+             printf(\"instrumented=%d findings=%d\\n\", v, r.finding_count); return 0;}\n",
+        )
+        .unwrap();
+        let bin = dir.join("guardtest");
+        let status = std::process::Command::new("cc")
+            .arg("-I")
+            .arg(&inc)
+            .arg(&src)
+            .arg(&main_c)
+            .arg("-o")
+            .arg(&bin)
+            .status()
+            .unwrap();
+        assert!(status.success(), "cc failed to compile the native guard");
+        let output = std::process::Command::new(&bin).output().unwrap();
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(text.contains("instrumented="), "guard output: {text}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn unrelated_env_is_not_flagged() {
         let env = vec![("PATH".to_string(), "/usr/bin:/home/frida".to_string())];
         let r = classify(None, None, &env, DEFAULT_SIGNATURES);

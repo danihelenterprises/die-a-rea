@@ -130,6 +130,13 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-031 — The native guard is a linkable C library, not injected.** `build` never
+patches native binaries; `runtime/guard/direa_guard.c` is compiled and linked by
+the program author, mirroring `direa_core::guard`. [Evidence:
+`runtime/guard/direa_guard.{h,c}`; `crates/direa-core/src/guard.rs` test
+`native_guard_compiles_and_runs`] -> Never attempt post-build injection into
+native binaries. (ADR-0018)
+
 **K-030 — The control-flow axis is external and opt-in.** It is no longer a
 default probe (the x86-prologue proxy is gone); `verify --decompiler "<cmd>"`
 adds `ExternalControlFlowProbe`, which reads an integer function count from the
