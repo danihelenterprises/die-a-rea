@@ -113,10 +113,10 @@ to bottom unless a dependency says otherwise.
 | Tests (`cargo test --all`) | 37 |
 | Backlog items (`B-NNN`) | 14 |
 | Open backlog items (High) | 6 |
-| Durable lessons (`K-NNN`) | 1 |
+| Durable lessons (`K-NNN`) | 10 |
 | Decision records (`ADR-NNNN`) | 7 |
 | Markdown docs (tracked) | 23 |
-| Commits in history | 1 |
+| Commits in history | 2 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -127,4 +127,5 @@ to bottom unless a dependency says otherwise.
   policy profiles; target detection; planner/adapter registry; built-in JS
   hardening; seeded randomization; tarpits; build-metadata sidecar; RRS probes
   and report. All are covered by tests and listed under "What works".
-- **Backfill pending:** further `KNOWLEDGE.md` entries land in the next commit.
+- **Backfill (commit 2):** `KNOWLEDGE.md` seeded with K-002–K-010 (toolchain facts
+  and failure modes evidenced by tests).

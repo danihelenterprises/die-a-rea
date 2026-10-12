@@ -19,3 +19,60 @@ version + target path, and any nonzero seed is reproducible. [Evidence:
 `crates/direa-core/src/random.rs`; tests `deterministic_for_same_seed`,
 `derived_seed_is_stable`] -> Never add unseeded randomness or change the seed
 derivation: both change build output and break reproducible builds. (ADR-0003)
+
+**K-002 — Clamp prefix reads to the file length.** `std::fs::read(...).get(..4096)`
+returns `None` for files smaller than 4096 bytes, so small artifacts silently
+degrade to `TargetKind::Unknown`. Use `b.get(..b.len().min(4096))`. [Evidence:
+`crates/direa-core/src/planner.rs`; regression test `plans_short_elf_file`] ->
+Any fixed-window prefix read (planner and `build.rs`) must clamp to `len`.
+(Open)
+
+**K-003 — `verify` discounts injected string runs, not decoy counts.** The string
+axis is signal-to-noise, computed from `InjectedStats::injected_string_runs`
+written by `build`. Renaming the probe `"strings"` or dropping that metadata field
+silently reverts to raw ratios and mis-scores decoys. [Evidence:
+`crates/direa-verify/src/harness.rs`; `crates/direa-core/src/buildmeta.rs`;
+`crates/direa-cli/src/build.rs` (`printable_runs`)] -> Keep the probe name and the
+metadata field in sync. (ADR-0005)
+
+**K-004 — Inapplicable RRS axes are skipped, not scored.** A probe whose baseline
+reading is zero (e.g. x86 prologues on a JS target) or that errors is omitted from
+the report, never counted as fully resisted. [Evidence:
+`crates/direa-verify/src/harness.rs` (`measure`); test `end_to_end_static`] ->
+When adding a probe, consciously decide its baseline-zero semantics. (ADR-0005)
+
+**K-005 — Manifest sections need `deny_unknown_fields` plus struct-level
+`#[serde(default)]`.** Without the struct-level default, a partial section such as
+`[tarpit]` that omits `custom_payloads` fails to parse (`missing field`). [Evidence:
+`crates/direa-core/src/manifest.rs`; test `partial_randomization_section_uses_defaults`]
+-> New `Manifest` sections must carry both attributes. (Open)
+
+**K-006 — Adapter protocol is JSON over stdio, versioned per request.** Every
+`AdapterRequest` carries `protocol = direa_core::adapter::proto_version()` (currently
+`1`); adapters reply with an `AdapterResponse`. [Evidence:
+`crates/direa-core/src/adapter.rs`; test `request_round_trips`] -> Incompatible
+protocol changes require an ADR and a `proto_version` bump. (ADR-0002)
+
+**K-007 — Injected JS is appended, never spliced.** Decoys, padding and notices are
+appended after the real file body; inserting content mid-file risks breaking
+template literals and ESM structure. [Evidence: `crates/direa-cli/src/build.rs`
+(`harden_text_file`, `generate_js_bundle`)] -> Keep JS transforms additive. (Open)
+
+**K-008 — Injected comment/payload text must be sanitized.** A `*/` inside an
+injected block comment closes it early and corrupts the generated JS. [Evidence:
+`crates/direa-cli/src/build.rs` (`sanitize_comment`); test `comment_sanitized`] ->
+Route all operator-supplied text (`notice_text`, `custom_payloads`) through the
+sanitizer. (Open)
+
+**K-009 — Tarpit padding is hard-bounded.** `generate_padding` clamps to
+`max_total_kb`, and decoy counts are clamped (`MAX_DECOY_*`, `MAX_DEPTH`), so a
+misconfigured manifest cannot produce an unbounded artifact. [Evidence:
+`crates/direa-cli/src/build.rs`; test `padding_is_bounded`] -> Keep every new
+injection behind a cap. (Open)
+
+**K-010 — The build-metadata sidecar path is conventional.** `build` writes
+`<out>/die-a-rea.build.json`; `verify` resolves it via
+`BuildMetadata::sidecar_for(hardened)` and matches records by exact path then by
+filename. [Evidence: `crates/direa-core/src/buildmeta.rs`; tests `find_by_name`,
+`noise_fraction_is_clamped`] -> Changing the output layout or sidecar location
+breaks decoy discounting and the analysis-noise axis. (Open)
