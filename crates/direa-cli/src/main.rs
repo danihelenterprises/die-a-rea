@@ -85,6 +85,9 @@ enum Command {
         /// hardened artifact).
         #[arg(long)]
         build_meta: Option<PathBuf>,
+        /// Also measure the runtime-instrumentation axis against this environment.
+        #[arg(long)]
+        with_runtime: bool,
         /// Write the JSON report to this path.
         #[arg(long)]
         out: Option<PathBuf>,
@@ -136,6 +139,7 @@ fn main() -> Result<()> {
             with_rea,
             rea_command,
             build_meta,
+            with_runtime,
             out,
             json,
         } => cmd_verify(
@@ -144,6 +148,7 @@ fn main() -> Result<()> {
             with_rea,
             rea_command,
             build_meta,
+            with_runtime,
             out,
             json,
         ),
@@ -264,6 +269,7 @@ fn cmd_verify(
     with_rea: bool,
     rea_command: Vec<String>,
     build_meta: Option<PathBuf>,
+    with_runtime: bool,
     out: Option<PathBuf>,
     json: bool,
 ) -> Result<()> {
@@ -278,6 +284,7 @@ fn cmd_verify(
     opts.with_rea = with_rea;
     opts.rea_command = rea_command;
     opts.build_meta = build_meta;
+    opts.with_runtime = with_runtime;
 
     let run = direa_verify::run(&opts).map_err(|e| anyhow::anyhow!(e))?;
     let report = &run.report;

@@ -9,6 +9,7 @@
 pub mod adapter;
 pub mod buildmeta;
 pub mod error;
+pub mod guard;
 pub mod manifest;
 pub mod native_post;
 pub mod planner;
@@ -23,6 +24,7 @@ pub use adapter::{
 };
 pub use buildmeta::{BuildMetadata, InjectedStats, TargetMetadata};
 pub use error::{DireaError, Result};
+pub use guard::GuardReport;
 pub use manifest::{AgentDefense, Manifest, Project, Randomization, TargetSpec, Tarpit, Verify};
 pub use native_post::{NativeFormat, StripReport};
 pub use planner::{detect_kind, plan_manifest, BuildPlan, TargetKind};

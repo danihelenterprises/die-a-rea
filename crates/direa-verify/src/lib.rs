@@ -7,6 +7,7 @@
 
 pub mod harness;
 pub mod probes;
+pub mod runtime;
 
 pub use harness::{measure, run, ReaObservation, VerifyOptions, VerifyRun};
 pub use probes::{

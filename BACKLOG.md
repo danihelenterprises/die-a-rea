@@ -19,7 +19,8 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-004 | Implement built-in `native-post` stripping (symbols/debug/build metadata) for ELF/Mach-O/PE | High | Adapters | Closed | In-process `native_post.rs` (ELF/PE/Mach-O); wired via `harden_native`. Mach-O DWARF/fat + PE resources remain follow-ups. |
 | B-005 | Implement the .NET adapter (ConfuserEx driver) | Medium | Adapters | Open | Registry lists `clr`; no implementation. |
 | B-006 | Implement the Android/JVM adapter (R8/ProGuard config generation) | Medium | Adapters | Open | Registry lists `android`; Promises GPL tool stays subprocess-only (ADR-0007). |
-| B-007 | Add a runtime guard library and wire the `runtime-instrumentation-exposure` RRS axis | High | Runtime | Open | `docs/RRS.md` marks the axis *planned*; no guard code exists. |
+| B-007 | Add a runtime guard library and wire the `runtime-instrumentation-exposure` RRS axis | High | Runtime | Closed | `direa_core::guard` + `verify --with-runtime` (ADR-0014, K-020); detects debugger/Frida/inspector from the environment. |
+| B-021 | Honor `[runtime] instrumentation_signatures` in the guard | Low | Runtime | Open | `guard::detect` uses built-in signatures; the manifest list is not yet consumed. |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Open | README Roadmap; `agent_decoys` today only injects comments/strings. |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Open | README Roadmap; depends on B-008. |
 | B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
@@ -54,3 +55,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   `js_syntax` (ADR-0013, K-018).
 - **B-002 (Closed, commit 10):** built-in Go build-info/ID scrub in `native_post`
   (K-019). `garble` remains bring-your-own for identifier/literal obfuscation.
+- **B-007 (Closed, commit 11):** `direa_core::guard` detects debugger/Frida/
+  inspector from the environment; `verify --with-runtime` adds the
+  runtime-instrumentation axis (ADR-0014, K-020). Opened B-021 (manifest
+  signatures not yet consumed).

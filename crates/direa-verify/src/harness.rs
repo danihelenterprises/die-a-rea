@@ -25,6 +25,9 @@ pub struct VerifyOptions {
     /// Explicit build-metadata sidecar; defaults to the convention next to the
     /// hardened artifact when present.
     pub build_meta: Option<PathBuf>,
+    /// Also measure the runtime-instrumentation axis (checks the current
+    /// environment for a debugger / Frida / inspector).
+    pub with_runtime: bool,
 }
 
 impl VerifyOptions {
@@ -41,6 +44,7 @@ impl VerifyOptions {
             ],
             rea_timeout_secs: 120,
             build_meta: None,
+            with_runtime: false,
         }
     }
 }
@@ -69,15 +73,32 @@ pub fn run(opts: &VerifyOptions) -> Result<VerifyRun, String> {
     if !opts.hardened.exists() {
         return Err(format!("hardened not found: {}", opts.hardened.display()));
     }
-
     let meta = load_build_meta(opts);
     let probes = default_probes();
-    let (measurements, mut notes) = measure(&opts.original, &opts.hardened, &probes, meta.as_ref());
+    let (mut measurements, mut notes) =
+        measure(&opts.original, &opts.hardened, &probes, meta.as_ref());
     if meta.is_none() {
         notes.push(
             "no build metadata found; analysis-noise axis omitted and decoy strings not discounted"
                 .to_string(),
         );
+    }
+
+    if opts.with_runtime {
+        let report = direa_core::guard::detect();
+        match crate::runtime::runtime_measurement(&report) {
+            Some(m) => {
+                notes.push(format!(
+                    "runtime-instrumentation: instrumented environment detected ({})",
+                    report.findings.join(", ")
+                ));
+                measurements.push(m);
+            }
+            None => notes.push(
+                "runtime-instrumentation: no instrumentation detected; axis skipped (unknown)"
+                    .to_string(),
+            ),
+        }
     }
 
     let mut rea = None;

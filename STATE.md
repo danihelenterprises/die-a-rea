@@ -94,7 +94,8 @@ to bottom unless a dependency says otherwise.
   `DIREA_JS_ADAPTER` or `direa-js` is available (ADR-0009); e.g. a bundle
   obfuscated by `javascript-obfuscator`. Absence is a note, not an error.
 - `die-a-rea verify --original A --hardened B` prints an RRS report; `--json`
-  for CI; `--with-rea` runs the external adversary when available. The
+  for CI; `--with-rea` runs the external adversary when available; `--with-runtime`
+  adds the runtime-instrumentation axis (debugger/Frida/inspector detection). The
   `strings` axis measures verbatim survival of baseline tokens (`direa_core::scan`
   token sets), so minified bundles, encoding and stripping all score correctly
   (ADR-0011).
@@ -116,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 56 |
-| Backlog items (`B-NNN`) | 20 |
-| Open backlog items (High) | 2 |
-| Durable lessons (`K-NNN`) | 19 |
-| Decision records (`ADR-NNNN`) | 13 |
-| Markdown docs (tracked) | 29 |
-| Commits in history | 10 |
+| Tests (`cargo test --all`) | 64 |
+| Backlog items (`B-NNN`) | 21 |
+| Open backlog items (High) | 1 |
+| Durable lessons (`K-NNN`) | 20 |
+| Decision records (`ADR-NNNN`) | 14 |
+| Markdown docs (tracked) | 30 |
+| Commits in history | 11 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -162,3 +163,6 @@ to bottom unless a dependency says otherwise.
 - **B-002 (commit 10):** built-in Go build-info/ID scrub in `native_post`
   (K-019); `garble` remains bring-your-own for source obfuscation. Closed
   `B-002`.
+- **B-007 (commit 11):** `direa_core::guard` + `verify --with-runtime` measure
+  runtime instrumentation from the environment (ADR-0014, K-020). Closed `B-007`;
+  opened `B-021` (manifest signatures not yet consumed).

@@ -23,7 +23,7 @@ not affect the score.
 | `source-map-exposure` | 1.2 | `*.map`, `sourceMappingURL`, `sourcesContent` |
 | `control-flow-exposure` | 1.5 | x86 function-prologue signatures |
 | `analysis-noise` | 1.5 | injected decoy/tarpit fraction (from build metadata) |
-| `runtime-instrumentation-exposure` | 1.0 | guard-lib result (planned) |
+| `runtime-instrumentation-exposure` | 1.0 | environment instrumentation (`--with-runtime`; skipped when clean, ADR-0014) |
 | `agent-deception` | 2.0 | REA adversary / canary layer (experimental) |
 
 Weights are `Axis::weight` and can be overridden per measurement.

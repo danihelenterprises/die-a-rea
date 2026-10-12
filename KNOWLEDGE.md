@@ -130,6 +130,15 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-020 — Runtime instrumentation is detected from the environment; a clean
+environment skips the axis.** `guard::detect` reads `TracerPid`, process maps and
+injected-library env; `verify --with-runtime` adds the axis only when
+instrumentation is found (otherwise unknown → skipped, K-004). [Evidence:
+`crates/direa-core/src/guard.rs`, `crates/direa-verify/src/runtime.rs`; demo —
+`FRIDA=1` adds the axis and lowers the RRS] -> Never execute or attach to the
+target for this axis (ADR-0001); keep the clean case as *skip*, not *resisted*.
+(ADR-0014)
+
 **K-019 — Go build metadata is format-agnostic.** The `\xff Go buildinf:` blob
 and `Go build ID: "..."` can appear in Go binaries of any container, so
 `native_post` scrubs them by scanning for every format (and treats
