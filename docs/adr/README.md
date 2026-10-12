@@ -28,5 +28,6 @@ file, id `ADR-NNNN`, never reused.
 | [ADR-0010](ADR-0010-strings-axis-counts-tokens.md) | The `strings` axis counts identifier/literal tokens | Accepted |
 | [ADR-0011](ADR-0011-string-exposure-measures-verbatim-survival.md) | String exposure measures verbatim survival | Accepted |
 | [ADR-0012](ADR-0012-build-never-overwrites-source.md) | Build never overwrites the source or unrelated files | Accepted |
+| [ADR-0013](ADR-0013-post-build-health-check.md) | Build runs a post-build health check | Accepted |
 
 Template: [0000-template.md](0000-template.md).

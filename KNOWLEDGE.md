@@ -129,3 +129,11 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 `crates/direa-cli/src/build.rs` (`guard_source_and_output`, output-dir check);
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
+
+**K-018 — `build` health-checks the hardened artifact and fails on breakage.**
+After each target (never in `--dry-run`) it verifies non-emptiness and that native
+magic is preserved, then runs the opt-in `[verify] command` and, if enabled,
+`node --check`. Any failure is a hard error. [Evidence:
+`crates/direa-cli/src/build.rs` (`post_build_check`); test
+`post_build_check_fails_on_bad_command`] -> The check must stay fatal; a broken
+hardened artifact must never ship. (ADR-0013)

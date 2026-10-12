@@ -115,13 +115,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 52 |
-| Backlog items (`B-NNN`) | 19 |
+| Tests (`cargo test --all`) | 54 |
+| Backlog items (`B-NNN`) | 20 |
 | Open backlog items (High) | 3 |
-| Durable lessons (`K-NNN`) | 17 |
-| Decision records (`ADR-NNNN`) | 12 |
-| Markdown docs (tracked) | 28 |
-| Commits in history | 8 |
+| Durable lessons (`K-NNN`) | 18 |
+| Decision records (`ADR-NNNN`) | 13 |
+| Markdown docs (tracked) | 29 |
+| Commits in history | 9 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -155,3 +155,6 @@ to bottom unless a dependency says otherwise.
 - **B-019 (commit 8):** `build` now refuses to overwrite the source artifact or a
   foreign (non-die-a-rea) output directory; `--force` overrides (ADR-0012,
   K-017). Closed `B-019`.
+- **B-020 (commit 9):** `build` health-checks each hardened artifact (non-empty +
+  native magic) and runs the opt-in `[verify]` command / `js_syntax`; failures
+  fail the build (ADR-0013, K-018). Closed `B-020`.

@@ -14,6 +14,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use anyhow::{bail, Context, Result};
 use direa_core::adapter::{AdapterOp, AdapterRequest, SubprocessAdapter};
@@ -254,6 +255,10 @@ pub fn build(
             }
         }
 
+        if !dry_run {
+            post_build_check(src, &dest, kind, out, &manifest.verify)?;
+        }
+
         let total_bytes = if dry_run {
             file_or_dir_size(src).unwrap_or(0) + injected.injected_bytes
         } else {
@@ -428,6 +433,130 @@ fn absolute(path: &Path) -> PathBuf {
     std::fs::canonicalize(path)
         .or_else(|_| std::path::absolute(path))
         .unwrap_or_else(|_| path.to_path_buf())
+}
+
+/// Post-build health check (ADR-0013): always verifies the hardened artifact is
+/// non-empty and (for native formats) still carries the source's magic; then runs
+/// the opt-in `[verify]` command and `node --check` when configured. Any failure
+/// fails the build so a broken artifact is not shipped.
+fn post_build_check(
+    src: &Path,
+    dest: &Path,
+    kind: TargetKind,
+    out: &Path,
+    verify: &direa_core::Verify,
+) -> Result<()> {
+    if file_or_dir_size(dest).unwrap_or(0) == 0 {
+        bail!(
+            "post-build check failed: hardened artifact {} is empty",
+            dest.display()
+        );
+    }
+    if matches!(
+        kind,
+        TargetKind::NativeElf | TargetKind::NativeMachO | TargetKind::NativePe | TargetKind::Go
+    ) && !same_magic(src, dest)
+    {
+        bail!(
+            "post-build check failed: {} no longer carries the source executable magic",
+            dest.display()
+        );
+    }
+    if let Some(command) = &verify.command {
+        run_check_command(command, dest, out)?;
+    }
+    if verify.js_syntax && matches!(kind, TargetKind::JavaScript | TargetKind::ElectronAsar) {
+        check_js_syntax(dest)?;
+    }
+    Ok(())
+}
+
+fn head(path: &Path) -> Option<Vec<u8>> {
+    use std::io::Read;
+    let mut buf = [0u8; 4];
+    let mut f = std::fs::File::open(path).ok()?;
+    let n = f.read(&mut buf).ok()?;
+    Some(buf[..n].to_vec())
+}
+
+fn same_magic(src: &Path, dest: &Path) -> bool {
+    match (head(src), head(dest)) {
+        (Some(a), Some(b)) => {
+            if a.starts_with(b"MZ") {
+                b.starts_with(b"MZ")
+            } else {
+                a == b
+            }
+        }
+        _ => true,
+    }
+}
+
+fn run_check_command(command: &str, artifact: &Path, out: &Path) -> Result<()> {
+    let expanded = command
+        .replace("{artifact}", &artifact.display().to_string())
+        .replace("{out}", &out.display().to_string());
+    let mut cmd = if cfg!(windows) {
+        let mut c = Command::new("cmd");
+        c.arg("/C").arg(&expanded);
+        c
+    } else {
+        let mut c = Command::new("sh");
+        c.arg("-c").arg(&expanded);
+        c
+    };
+    let output = cmd
+        .output()
+        .with_context(|| format!("running post-build command: {expanded}"))?;
+    if !output.status.success() {
+        bail!(
+            "post-build command failed ({}): {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    Ok(())
+}
+
+fn check_js_syntax(dest: &Path) -> Result<()> {
+    let Some(node) = direa_core::which("node") else {
+        // Documented: skipped when node is unavailable.
+        return Ok(());
+    };
+    let mut files = Vec::new();
+    collect_js(dest, &mut files);
+    for file in files {
+        let output = Command::new(&node)
+            .arg("--check")
+            .arg(&file)
+            .output()
+            .with_context(|| format!("running node --check on {}", file.display()))?;
+        if !output.status.success() {
+            bail!(
+                "post-build JS syntax check failed for {}: {}",
+                file.display(),
+                String::from_utf8_lossy(&output.stderr).trim()
+            );
+        }
+    }
+    Ok(())
+}
+
+fn collect_js(path: &Path, out: &mut Vec<PathBuf>) {
+    if path.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.flatten() {
+                collect_js(&entry.path(), out);
+            }
+        }
+    } else if path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| matches!(e, "js" | "mjs" | "cjs"))
+        .unwrap_or(false)
+    {
+        out.push(path.to_path_buf());
+    }
 }
 
 /// Refuse output that would overwrite the source artifact or be written inside
@@ -880,6 +1009,40 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
             out.contains("stub-applied"),
             "adapter must transform the target"
         );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn post_build_check_fails_on_bad_command() {
+        let dir = std::env::temp_dir().join(format!("direa-postcheck-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("app.js");
+        std::fs::write(&f, "var x = 1;\n").unwrap();
+
+        let bad = direa_core::Verify {
+            command: Some("exit 1".into()),
+            js_syntax: false,
+        };
+        assert!(post_build_check(&f, &f, TargetKind::JavaScript, &dir, &bad).is_err());
+
+        let ok = direa_core::Verify {
+            command: Some("exit 0".into()),
+            js_syntax: false,
+        };
+        assert!(post_build_check(&f, &f, TargetKind::JavaScript, &dir, &ok).is_ok());
+
+        let empty = dir.join("empty");
+        std::fs::write(&empty, b"").unwrap();
+        assert!(post_build_check(
+            &f,
+            &empty,
+            TargetKind::JavaScript,
+            &dir,
+            &Default::default()
+        )
+        .is_err());
+
         let _ = std::fs::remove_dir_all(&dir);
     }
 

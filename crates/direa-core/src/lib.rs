@@ -23,7 +23,7 @@ pub use adapter::{
 };
 pub use buildmeta::{BuildMetadata, InjectedStats, TargetMetadata};
 pub use error::{DireaError, Result};
-pub use manifest::{AgentDefense, Manifest, Project, Randomization, TargetSpec, Tarpit};
+pub use manifest::{AgentDefense, Manifest, Project, Randomization, TargetSpec, Tarpit, Verify};
 pub use native_post::{NativeFormat, StripReport};
 pub use planner::{detect_kind, plan_manifest, BuildPlan, TargetKind};
 pub use policy::{PolicyOverrides, Profile, ResolvedPolicy};

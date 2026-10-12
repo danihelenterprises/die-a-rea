@@ -31,6 +31,9 @@ pub struct Manifest {
 
     #[serde(default)]
     pub tarpit: Tarpit,
+
+    #[serde(default)]
+    pub verify: Verify,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -158,6 +161,19 @@ impl Default for Tarpit {
             custom_payloads: Vec::new(),
         }
     }
+}
+
+/// Post-build health checks. Optional; when absent, only the always-on
+/// structural sanity check runs (see ADR-0013).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Verify {
+    /// Shell command run after each target is written. `{artifact}` is replaced
+    /// with the hardened path and `{out}` with the output directory. A non-zero
+    /// exit fails the build.
+    pub command: Option<String>,
+    /// Run `node --check` over hardened JavaScript (requires `node` on PATH).
+    pub js_syntax: bool,
 }
 
 impl Manifest {
@@ -308,6 +324,20 @@ mod tests {
         assert_eq!(m.randomization.decoy_functions, 5);
         assert_eq!(m.randomization.decoy_strings, 500);
         assert!(m.tarpit.enabled);
+    }
+
+    #[test]
+    fn parses_verify_section() {
+        let m = Manifest::parse(
+            r#"
+            [verify]
+            command = "node --check {artifact}"
+            js_syntax = true
+            "#,
+        )
+        .unwrap();
+        assert_eq!(m.verify.command.as_deref(), Some("node --check {artifact}"));
+        assert!(m.verify.js_syntax);
     }
 
     #[test]

@@ -32,6 +32,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-017 | Make the `strings` probe token/literal-aware so minified JS scores correctly | High | RRS | Closed | Done: `direa_core::scan::count_tokens` (ADR-0010). A minified line no longer collapses to one sequence. |
 | B-018 | Make the `strings` axis respond to string encoding | High | RRS | Closed | Solved as verbatim survival rather than base64 detection (ADR-0011, K-016): obfuscated JS now scores 0.56. |
 | B-019 | Guard `build` against overwriting the source artifact or a foreign output directory | High | CLI | Closed | `guard_source_and_output` plus the non-empty-`--out` check; `--force` overrides (ADR-0012, K-017). |
+| B-020 | Post-build health check so a broken hardened artifact fails the build | High | CLI | Closed | Always-on structural check plus opt-in `[verify]` command / `js_syntax` (ADR-0013, K-018). |
 
 ## Closed / Decided
 
@@ -48,3 +49,6 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   its `string-exposure` clause now passes.
 - **B-019 (Closed, commit 8):** `build` refuses to overwrite the source artifact
   or a foreign output directory; `--force` overrides (ADR-0012, K-017).
+- **B-020 (Closed, commit 9):** `build` health-checks the hardened artifact and
+  fails on breakage — non-empty + native magic, plus opt-in `[verify]` command and
+  `js_syntax` (ADR-0013, K-018).

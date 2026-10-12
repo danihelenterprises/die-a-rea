@@ -39,6 +39,12 @@ max_total_kb = 4096
 prompt_gate = true
 honeypots = 25
 
+# Post-build health check: a failing command fails the build, so a broken
+# hardened artifact never ships. `{artifact}` = hardened path, `{out}` = out dir.
+[verify]
+command = "node --check {artifact}"
+js_syntax = true
+
 # One or more targets. `die-a-rea` auto-detects the kind from bytes/extension.
 [[targets]]
 path = "dist/app.js"

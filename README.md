@@ -165,8 +165,23 @@ honeypots = 25
 ```
 
 The build writes a `die-a-rea.build.json` sidecar, so verification can tell decoys from
-real content. That's what turns "strings recovered" into a **signal-to-noise** measure:
-if 99.6% of what an analyst pulls out is noise, the signal is effectively gone.
+real content. That's what turns "strings recovered" into a **verbatim-survival** measure:
+how much of the original, readable signal is even still there (ADR-0011).
+
+### Don't ship a broken build
+
+After writing each artifact, `build` health-checks it: non-empty and (for native
+formats) still carrying the source's magic. Add your own smoke test and it runs too —
+a failure **fails the build**, so a broken hardened artifact never ships.
+
+```toml
+[verify]
+command = "node --check {artifact}"   # or your app's own smoke test
+js_syntax = true
+```
+
+`{artifact}` is the hardened path and `{out}` the output directory. See
+[ADR-0013](docs/adr/ADR-0013-post-build-health-check.md).
 
 ---
 
@@ -348,6 +363,11 @@ Do the following, and show me the plan before you finish:
      die-a-rea verify --original <artifact-1> --hardened dist-hardened/<artifact-1>
    Add a CI step that fails if the RRS drops below the threshold I choose. The metric
    is documented in docs/RRS.md.
+   Also add a [verify] block to die-a-rea.toml with a smoke test so a broken hardened
+   artifact fails the build, e.g.:
+     [verify]
+     command = "<how this project checks its own build still works>"
+     js_syntax = true   # JS/Electron only
 6. JavaScript/Electron only: install `javascript-obfuscator` in this project and point
    the build at the bundled adapter:
      export DIREA_JS_ADAPTER=/tmp/die-a-rea/adapters/js/direa-js
