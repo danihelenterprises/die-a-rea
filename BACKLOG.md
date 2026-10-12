@@ -28,7 +28,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-011 | Add `CONTRIBUTING.md` and `CHANGELOG.md` | Low | Docs | Closed | Both added and indexed in `docs/README.md`. |
 | B-012 | Declare MSRV (`rust-version`) in the workspace | Low | Build | Closed | `rust-version = "1.79"` in `[workspace.package]`, inherited by every crate; toolchain recorded as K-022. |
 | B-013 | Validate and bound deceptive `agent_decoys` payloads before any default use | Medium | Agent | Open | `docs/ETHICS.md` and ADR-0006 keep deception opt-in; depends on B-009. |
-| B-014 | Strengthen the docs-check counter-duplication heuristic | Low | Tooling | Open | `tools/docs-check.sh` check 5 is best-effort (see STATE). |
+| B-014 | Strengthen the docs-check counter-duplication heuristic | Low | Tooling | Closed | Fatal by default, broader labels, and `--self-test` (wired into CI). |
 | B-015 | Extend `native-post` to Mach-O DWARF sections and fat containers | Medium | Adapters | Open | `native_post.rs` handles only `LC_SYMTAB`; `__DWARF`/segment names and FAT remain. |
 | B-016 | Extend `native-post` to PE resources and the rich header | Low | Adapters | Open | The PE handler clears the COFF symbol table and debug directory only. |
 | B-017 | Make the `strings` probe token/literal-aware so minified JS scores correctly | High | RRS | Closed | Done: `direa_core::scan::count_tokens` (ADR-0010). A minified line no longer collapses to one sequence. |
@@ -67,3 +67,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 - **B-011 (Closed, commit 14):** added `CONTRIBUTING.md` and `CHANGELOG.md`.
 - **B-021 (Closed, commit 15):** `verify` now feeds `[runtime]
   instrumentation_signatures` into `guard::detect_with`.
+- **B-014 (Closed, commit 16):** docs-check counter heuristic is fatal, broader,
+  and has a `--self-test` wired into CI.

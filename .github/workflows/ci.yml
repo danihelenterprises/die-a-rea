@@ -42,6 +42,8 @@ jobs:
           fetch-depth: 0
       - name: Documentation invariants
         run: bash tools/docs-check.sh
+      - name: Counter-heuristic self-test
+        run: bash tools/docs-check.sh --self-test
 
   docker:
     runs-on: ubuntu-latest

@@ -123,7 +123,7 @@ to bottom unless a dependency says otherwise.
 | Durable lessons (`K-NNN`) | 22 |
 | Decision records (`ADR-NNNN`) | 15 |
 | Markdown docs (tracked) | 34 |
-| Commits in history | 15 |
+| Commits in history | 16 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -175,3 +175,5 @@ to bottom unless a dependency says otherwise.
   `B-011`.
 - **B-021 (commit 15):** `verify` honors `[runtime] instrumentation_signatures`
   via `guard::detect_with`. Closed `B-021`.
+- **B-014 (commit 16):** docs-check counter heuristic made fatal with a broader
+  pattern and a `--self-test` in CI. Closed `B-014`.

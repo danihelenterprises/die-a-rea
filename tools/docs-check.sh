@@ -110,23 +110,55 @@ check_commits() {
     [ "$missing" -eq 0 ] && ok "commit 'Doc impact:' lines present (range: $range)"
 }
 
-# ── Check 5: counters not restated outside STATE.md (best-effort) ────────────
+# ── Check 5: counters not restated outside STATE.md ──────────────────────────
+# A counter is "<number> <label>" where the label matches a canonical metric.
+COUNTER_PATTERN='[0-9]+[[:space:]]+(tests|backlog items|lessons|ADRs|decision records|markdown docs|commits)\b'
+
+# Print offending lines for a root, excluding the canonical table in STATE.md.
+count_counter_hits() {
+    grep -RInE "$COUNTER_PATTERN" --include='*.md' "$1" 2>/dev/null |
+        grep -v '/STATE.md:' || true
+}
+
 check_counters() {
     local hits
-    hits="$(grep -RInE '[0-9]+[[:space:]]+tests?\b' --include='*.md' . 2>/dev/null |
-        grep -v '^\./STATE.md:' || true)"
+    hits="$(count_counter_hits "$ROOT")"
     if [ -n "$hits" ]; then
-        if [ "${STRICT_COUNTERS:-0}" = "1" ]; then
-            while IFS= read -r line; do err "counter likely restated outside STATE.md: $line"; done <<<"$hits"
-        else
-            while IFS= read -r line; do warn "counter likely restated outside STATE.md: $line"; done <<<"$hits"
-        fi
+        while IFS= read -r line; do
+            err "counter restated outside STATE.md: $line"
+        done <<<"$hits"
     else
         ok "no counters restated outside STATE.md"
     fi
 }
 
+# Prove the counter detector works: a clean tree passes, a planted duplicate is
+# caught. Runnable in CI and locally with `tools/docs-check.sh --self-test`.
+self_test() {
+    local tmp
+    tmp="$(mktemp -d)"
+    printf '| Tests (`cargo test --all`) | 37 |\n' >"$tmp/STATE.md"
+    printf 'a clean document with no counts\n' >"$tmp/clean.md"
+    if [ -n "$(count_counter_hits "$tmp")" ]; then
+        printf 'docs-check: self-test FAIL (clean tree was flagged)\n' >&2
+        rm -rf "$tmp"
+        exit 1
+    fi
+    printf 'The suite has 37 tests today.\n' >"$tmp/dirty.md"
+    if [ -z "$(count_counter_hits "$tmp")" ]; then
+        printf 'docs-check: self-test FAIL (planted counter was missed)\n' >&2
+        rm -rf "$tmp"
+        exit 1
+    fi
+    rm -rf "$tmp"
+    printf 'docs-check: counter self-test PASS\n'
+}
+
 main() {
+    if [ "${1:-}" = "--self-test" ]; then
+        self_test
+        exit 0
+    fi
     echo "docs-check: $ROOT"
     check_index
     check_links
