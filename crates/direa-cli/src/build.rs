@@ -179,7 +179,7 @@ pub fn build(
                     injected = harden_text_file(
                         src, &dest, &policy, &notice, &canaries, &rz, &tp, &mut rng,
                     )?;
-                    apply_js_adapter(&dest, &policy, kind, &mut actions, &mut result.notes);
+                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
                 }
             }
             TargetKind::JavaScript | TargetKind::ElectronAsar => {
@@ -193,7 +193,7 @@ pub fn build(
                         .with_context(|| format!("creating {}", dest.display()))?;
                     harden_tree(src, &dest, &policy, &notice, &canaries)?;
                     injected = write_decoy_tree(&dest, &policy, &rz, &tp, &notice, &mut rng)?;
-                    apply_js_adapter(&dest, &policy, kind, &mut actions, &mut result.notes);
+                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
                 }
             }
             TargetKind::NativeElf
@@ -218,6 +218,7 @@ pub fn build(
                         rep.removed.len(),
                         rep.bytes_zeroed
                     ));
+                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
                 } else {
                     injected.padding_bytes = if policy.tarpit {
                         tp.padding_kb.min(tp.max_total_kb) as u64 * 1024
@@ -245,6 +246,7 @@ pub fn build(
                             rep.removed.len()
                         ));
                     }
+                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
                 } else if policy.tarpit {
                     injected.padding_bytes = tp.padding_kb.min(tp.max_total_kb) as u64 * 1024;
                     injected.injected_bytes = injected.padding_bytes;
@@ -345,63 +347,79 @@ fn token_runs(bytes: &[u8]) -> u64 {
     direa_core::scan::count_tokens(bytes, direa_core::scan::DEFAULT_MIN_TOKEN)
 }
 
-/// Resolve the optional external JavaScript adapter.
-///
-/// Order: `DIREA_JS_ADAPTER` (absolute path to an executable) then `direa-js` on
-/// `PATH`. Absence is not an error: build continues with its built-in transforms.
-fn resolve_js_adapter() -> Option<AdapterEntry> {
-    if let Ok(path) = std::env::var("DIREA_JS_ADAPTER") {
+/// Environment override for an adapter's executable, e.g. `js` -> `DIREA_JS_ADAPTER`.
+fn adapter_env_key(id: &str) -> String {
+    format!(
+        "DIREA_{}_ADAPTER",
+        id.to_ascii_uppercase().replace('-', "_")
+    )
+}
+
+/// Resolve an external adapter: env override first, then its command on `PATH`.
+fn resolve_adapter(id: &str, command: &str) -> Option<AdapterEntry> {
+    if let Ok(path) = std::env::var(adapter_env_key(id)) {
         if !path.trim().is_empty() {
             return Some(AdapterEntry {
-                id: "js".into(),
+                id: id.into(),
                 command: path,
                 args: vec![],
-                kinds: vec![TargetKind::JavaScript, TargetKind::ElectronAsar],
+                kinds: vec![],
                 builtin: false,
             });
         }
     }
-    direa_core::which("direa-js").map(|p| AdapterEntry {
-        id: "js".into(),
+    direa_core::which(command).map(|p| AdapterEntry {
+        id: id.into(),
         command: p.to_string_lossy().into_owned(),
         args: vec![],
-        kinds: vec![TargetKind::JavaScript, TargetKind::ElectronAsar],
+        kinds: vec![],
         builtin: false,
     })
 }
 
-/// Run the external JS adapter over the hardened target, if installed.
-fn apply_js_adapter(
+/// Run every external adapter registered for this target kind, if installed.
+/// Absence or failure is a note, never an error (ADR-0009).
+fn apply_external_adapters(
     dest: &Path,
     policy: &ResolvedPolicy,
     kind: TargetKind,
     actions: &mut Vec<String>,
     notes: &mut Vec<String>,
 ) {
-    let Some(entry) = resolve_js_adapter() else {
-        notes.push(
-            "js adapter not installed (set DIREA_JS_ADAPTER or add `direa-js` to PATH); built-in transforms only"
-                .into(),
-        );
-        return;
-    };
-    actions.push(format!("js adapter: {}", entry.command));
-    let request = AdapterRequest {
-        protocol: direa_core::adapter::proto_version(),
-        op: AdapterOp::Apply,
-        target: dest.to_path_buf(),
-        kind,
-        policy: policy.clone(),
-        options: serde_json::json!({}),
-    };
-    match SubprocessAdapter::new(entry).run(&request) {
-        Ok(resp) => {
-            for step in &resp.steps {
-                actions.push(format!("js: {}", step.detail));
+    for entry in direa_core::planner::default_registry()
+        .iter()
+        .filter(|e| !e.builtin && e.kinds.contains(&kind))
+    {
+        let Some(resolved) = resolve_adapter(&entry.id, &entry.command) else {
+            notes.push(format!(
+                "{} adapter not installed (set {} or add `{}` to PATH)",
+                entry.id,
+                adapter_env_key(&entry.id),
+                entry.command
+            ));
+            continue;
+        };
+        actions.push(format!("{} adapter: {}", entry.id, resolved.command));
+        let request = AdapterRequest {
+            protocol: direa_core::adapter::proto_version(),
+            op: AdapterOp::Apply,
+            target: dest.to_path_buf(),
+            kind,
+            policy: policy.clone(),
+            options: serde_json::json!({}),
+        };
+        match SubprocessAdapter::new(resolved).run(&request) {
+            Ok(resp) => {
+                for step in &resp.steps {
+                    actions.push(format!("{}: {}", entry.id, step.detail));
+                }
+                notes.push(format!(
+                    "{} adapter: {:?} — {}",
+                    entry.id, resp.status, resp.message
+                ));
             }
-            notes.push(format!("js adapter: {:?} — {}", resp.status, resp.message));
+            Err(e) => notes.push(format!("{} adapter failed: {e}", entry.id)),
         }
-        Err(e) => notes.push(format!("js adapter failed: {e}")),
     }
 }
 
@@ -1048,6 +1066,13 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
         .is_err());
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn adapter_env_key_is_derived() {
+        assert_eq!(adapter_env_key("js"), "DIREA_JS_ADAPTER");
+        assert_eq!(adapter_env_key("jvm-android"), "DIREA_JVM_ANDROID_ADAPTER");
+        assert_eq!(adapter_env_key("llvm"), "DIREA_LLVM_ADAPTER");
     }
 
     #[test]

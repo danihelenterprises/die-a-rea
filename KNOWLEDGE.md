@@ -130,6 +130,15 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-027 — External adapters are discovered generically.** `build` iterates the
+registry's external entries for the target kind and resolves each via
+`DIREA_<ID>_ADAPTER` then its command on `PATH`; absence is a note. LLVM is a
+compile-time hook (`DIREA_LLVM_BUILD`), while CLR/JVM adapters post-process.
+[Evidence: `crates/direa-cli/src/build.rs` (`apply_external_adapters`,
+`adapter_env_key`); test `adapter_env_key_is_derived`;
+`adapters/llvm/direa-llvm`] -> New adapters only need a registry entry, a script
+and a `DIREA_<ID>_ADAPTER` doc line. (ADR-0002, ADR-0009)
+
 **K-026 — The canary gauntlet is the detector's regression test.** `canary::gauntlet`
 runs `detect_injection` over a fixed adversarial corpus (must all be caught) and
 over our own gate/decoy payloads (must not be flagged); `die-a-rea canary-selftest`

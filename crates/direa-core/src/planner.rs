@@ -176,24 +176,20 @@ pub fn default_registry() -> Vec<AdapterEntry> {
     ];
 
     vec![
+        // Built-in, in-process adapters.
         builtin("native-post", native_kinds.clone()),
         builtin("agent-canary", TargetKind::ALL.to_vec()),
-        builtin("js", vec![TargetKind::JavaScript, TargetKind::ElectronAsar]),
-        builtin("electron", vec![TargetKind::ElectronAsar]),
-        builtin("clr", vec![TargetKind::DotNet]),
-        builtin("wasm", vec![TargetKind::Wasm]),
-        builtin("android", vec![TargetKind::AndroidApk]),
+        // External, subprocess adapters (bring-your-own toolchain; ADR-0002/0009).
+        external(
+            "js",
+            "direa-js",
+            vec![TargetKind::JavaScript, TargetKind::ElectronAsar],
+        ),
+        external("clr", "direa-clr", vec![TargetKind::DotNet]),
+        external("wasm", "direa-wasm", vec![TargetKind::Wasm]),
+        external("android", "direa-jvm", vec![TargetKind::AndroidApk]),
         external("llvm", "direa-llvm", native_kinds.clone()),
         external("go", "direa-go", vec![TargetKind::Go]),
-        external(
-            "rust",
-            "direa-rust",
-            vec![
-                TargetKind::NativeElf,
-                TargetKind::NativeMachO,
-                TargetKind::NativePe,
-            ],
-        ),
     ]
 }
 

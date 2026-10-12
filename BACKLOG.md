@@ -13,7 +13,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 
 | ID | Item | Severity | Area/Milestone | Status | Notes |
 |---|---|---|---|---|---|
-| B-001 | Implement the LLVM adapter (C/C++/Rust/Swift) wrapping Pluto/O-MVLL passes | High | Adapters | Open | `planner.rs` registers `llvm` → `direa-llvm`, which does not exist yet. |
+| B-001 | Implement the LLVM adapter (C/C++/Rust/Swift) wrapping Pluto/O-MVLL passes | High | Adapters | Closed | Generic external-adapter mechanism + `adapters/llvm/direa-llvm` (compile-time hook via `DIREA_LLVM_BUILD`); toolchain bring-your-own (K-027). |
 | B-002 | Implement the Go adapter (garble: identifiers, literals, strip build info) | High | Adapters | Closed | Built-in Go build-info/ID scrub in `native_post` (K-019); source-level identifier/literal obfuscation via `garble` remains bring-your-own. |
 | B-003 | Implement the JavaScript/Electron adapter (javascript-obfuscator + bytenode/asarmor) | High | Adapters | Closed | Adapter implemented, wired, tested (ADR-0009). Its `string-exposure` clause passes: obfuscated 5/9 baseline tokens survive vs 9/9 for the built-in path (ADR-0011). |
 | B-004 | Implement built-in `native-post` stripping (symbols/debug/build metadata) for ELF/Mach-O/PE | High | Adapters | Closed | In-process `native_post.rs` (ELF/PE/Mach-O); wired via `harden_native`. Mach-O DWARF/fat + PE resources remain follow-ups. |
@@ -79,3 +79,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   `canary-selftest`) wired into CI (K-026).
 - **B-013 (Closed, commit 21):** deceptive decoys bounded and sanitized, recorded
   in ADR-0016.
+- **B-001 (Closed, commit 22):** generic external-adapter discovery + the LLVM
+  reference adapter (K-027).
