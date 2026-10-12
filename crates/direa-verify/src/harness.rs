@@ -28,6 +28,9 @@ pub struct VerifyOptions {
     /// Also measure the runtime-instrumentation axis (checks the current
     /// environment for a debugger / Frida / inspector).
     pub with_runtime: bool,
+    /// Extra instrumentation signatures (e.g. `[runtime]
+    /// instrumentation_signatures`). Empty uses the built-in defaults.
+    pub signatures: Vec<String>,
 }
 
 impl VerifyOptions {
@@ -45,6 +48,7 @@ impl VerifyOptions {
             rea_timeout_secs: 120,
             build_meta: None,
             with_runtime: false,
+            signatures: Vec::new(),
         }
     }
 }
@@ -85,7 +89,7 @@ pub fn run(opts: &VerifyOptions) -> Result<VerifyRun, String> {
     }
 
     if opts.with_runtime {
-        let report = direa_core::guard::detect();
+        let report = direa_core::guard::detect_with(&opts.signatures);
         match crate::runtime::runtime_measurement(&report) {
             Some(m) => {
                 notes.push(format!(

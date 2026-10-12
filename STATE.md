@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 64 |
+| Tests (`cargo test --all`) | 65 |
 | Backlog items (`B-NNN`) | 22 |
 | Open backlog items (High) | 1 |
 | Durable lessons (`K-NNN`) | 22 |
 | Decision records (`ADR-NNNN`) | 15 |
 | Markdown docs (tracked) | 34 |
-| Commits in history | 14 |
+| Commits in history | 15 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -173,3 +173,5 @@ to bottom unless a dependency says otherwise.
   `B-012`.
 - **B-011 (commit 14):** added `CONTRIBUTING.md` and `CHANGELOG.md`. Closed
   `B-011`.
+- **B-021 (commit 15):** `verify` honors `[runtime] instrumentation_signatures`
+  via `guard::detect_with`. Closed `B-021`.

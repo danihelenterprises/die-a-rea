@@ -51,12 +51,29 @@ const INTERESTING_ENV: &[&str] = &[
     "NODE_OPTIONS",
 ];
 
-/// Inspect the current process for instrumentation.
+/// Inspect the current process for instrumentation using the default signatures.
 pub fn detect() -> GuardReport {
     let status = std::fs::read_to_string("/proc/self/status").ok();
     let maps = std::fs::read_to_string("/proc/self/maps").ok();
     let env: Vec<(String, String)> = std::env::vars().collect();
     classify(status.as_deref(), maps.as_deref(), &env, DEFAULT_SIGNATURES)
+}
+
+/// Inspect the current process using caller-supplied signatures (e.g. from a
+/// manifest's `[runtime] instrumentation_signatures`). When the list is empty,
+/// the built-in defaults are used.
+pub fn detect_with(signatures: &[String]) -> GuardReport {
+    let status = std::fs::read_to_string("/proc/self/status").ok();
+    let maps = std::fs::read_to_string("/proc/self/maps").ok();
+    let env: Vec<(String, String)> = std::env::vars().collect();
+    let owned: Vec<String>;
+    let refs: Vec<&str> = if signatures.is_empty() {
+        DEFAULT_SIGNATURES.to_vec()
+    } else {
+        owned = signatures.to_vec();
+        owned.iter().map(|s| s.as_str()).collect()
+    };
+    classify(status.as_deref(), maps.as_deref(), &env, &refs)
 }
 
 /// Pure classifier over already-collected signals (unit-testable).
@@ -163,6 +180,16 @@ mod tests {
         assert!(!r.instrumented);
         assert!(r.clean());
         assert!(r.findings.is_empty());
+    }
+
+    #[test]
+    fn custom_signature_is_honored() {
+        let maps = "7f0000-7f1000 r-xp 00000000 00:00 0 /opt/my-hook.so\n";
+        let r = classify(None, Some(maps), &[], &["my-hook"]);
+        assert!(r.instrumented);
+        // A signature not in the list is ignored.
+        let r2 = classify(None, Some(maps), &[], &["frida"]);
+        assert!(!r2.instrumented);
     }
 
     #[test]

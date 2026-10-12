@@ -20,7 +20,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-005 | Implement the .NET adapter (ConfuserEx driver) | Medium | Adapters | Open | Registry lists `clr`; no implementation. |
 | B-006 | Implement the Android/JVM adapter (R8/ProGuard config generation) | Medium | Adapters | Open | Registry lists `android`; Promises GPL tool stays subprocess-only (ADR-0007). |
 | B-007 | Add a runtime guard library and wire the `runtime-instrumentation-exposure` RRS axis | High | Runtime | Closed | `direa_core::guard` + `verify --with-runtime` (ADR-0014, K-020); detects debugger/Frida/inspector from the environment. |
-| B-021 | Honor `[runtime] instrumentation_signatures` in the guard | Low | Runtime | Open | `guard::detect` uses built-in signatures; the manifest list is not yet consumed. |
+| B-021 | Honor `[runtime] instrumentation_signatures` in the guard | Low | Runtime | Closed | `guard::detect_with` + `verify` reads the manifest list (empty = built-in defaults). |
 | B-022 | Docker toolchain (runtime + dev images) with robust error handling | Medium | Tooling | Closed | `docker/Dockerfile` (build/runtime/dev), `entrypoint.sh` (fail-fast), `compose.yml` (ADR-0015, K-021). |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Open | README Roadmap; `agent_decoys` today only injects comments/strings. |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Open | README Roadmap; depends on B-008. |
@@ -65,3 +65,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 - **B-012 (Closed, commit 13):** declared MSRV 1.79 across the workspace
   (K-022).
 - **B-011 (Closed, commit 14):** added `CONTRIBUTING.md` and `CHANGELOG.md`.
+- **B-021 (Closed, commit 15):** `verify` now feeds `[runtime]
+  instrumentation_signatures` into `guard::detect_with`.

@@ -143,6 +143,7 @@ fn main() -> Result<()> {
             out,
             json,
         } => cmd_verify(
+            cli.manifest.clone(),
             original,
             hardened,
             with_rea,
@@ -264,6 +265,7 @@ fn cmd_build(
 
 #[allow(clippy::too_many_arguments)]
 fn cmd_verify(
+    manifest_path: PathBuf,
     original: PathBuf,
     hardened: Option<PathBuf>,
     with_rea: bool,
@@ -285,6 +287,10 @@ fn cmd_verify(
     opts.rea_command = rea_command;
     opts.build_meta = build_meta;
     opts.with_runtime = with_runtime;
+    // Honor `[runtime] instrumentation_signatures` when a manifest is present.
+    if let Ok(manifest) = Manifest::load(&manifest_path) {
+        opts.signatures = manifest.runtime.instrumentation_signatures;
+    }
 
     let run = direa_verify::run(&opts).map_err(|e| anyhow::anyhow!(e))?;
     let report = &run.report;
