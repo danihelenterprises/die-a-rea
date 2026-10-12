@@ -1,0 +1,10 @@
+# paranoid - everything, including data-flow obfuscation, packing and opt-in
+# decoy semantics. Highest cost and highest false-positive risk. Test thoroughly
+# against your legitimate support, CI and antivirus environments.
+[policy]
+profile = "paranoid"
+
+[policy.overrides]
+obfuscate_data_flow = true
+pack = true
+agent_decoys = true

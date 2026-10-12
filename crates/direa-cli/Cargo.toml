@@ -1,0 +1,20 @@
+[package]
+name = "direa-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Command-line interface for die-a-rea: init, plan, build and verify."
+
+[[bin]]
+name = "die-a-rea"
+path = "src/main.rs"
+
+[dependencies]
+direa-core = { path = "../direa-core" }
+direa-verify = { path = "../direa-verify" }
+clap.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true

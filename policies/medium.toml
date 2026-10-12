@@ -1,0 +1,10 @@
+# medium - adds string encryption, debug stripping, anti-debug and canaries.
+# Good default for commercial desktop/mobile apps.
+[policy]
+profile = "medium"
+
+[policy.overrides]
+strip_debug_info = true
+encrypt_strings = true
+anti_debug = true
+agent_canaries = true

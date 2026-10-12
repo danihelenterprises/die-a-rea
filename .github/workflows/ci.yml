@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --all
+      - name: Smoke
+        run: |
+          cargo build
+          cd /tmp
+          rm -rf direa-ci && mkdir direa-ci && cd direa-ci
+          printf 'var a=1;\n//# sourceMappingURL=a.js.map\n' > a.js
+          "$GITHUB_WORKSPACE/target/debug/die-a-rea" init --name ci a.js
+          "$GITHUB_WORKSPACE/target/debug/die-a-rea" build --out dist-hardened
+          "$GITHUB_WORKSPACE/target/debug/die-a-rea" verify --original a.js --hardened dist-hardened/a.js --json
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Documentation invariants
+        run: bash tools/docs-check.sh

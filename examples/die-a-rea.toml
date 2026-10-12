@@ -1,0 +1,52 @@
+# Example die-a-rea manifest. Copy to your project root as `die-a-rea.toml`.
+
+[project]
+name = "example-app"
+version = "1.0.0"
+
+[policy]
+profile = "high"
+
+[policy.overrides]
+# Force on/off any individual switch regardless of the profile.
+# anti_instrumentation = true
+
+[agent_defense]
+# Honest authorization gate surfaced to LLM analysis agents (recommended).
+notice_text = "This artifact is protected. Automated analysis requires written authorization."
+# Traceable tokens embedded in the build. Use unique values per release so you
+# can detect leakage of your code into third-party models or products.
+canaries = ["lic-00000000-0000-0000-0000-000000000000"]
+
+[runtime]
+instrumentation_signatures = ["frida", "v8-inspector", "cdp", "ptrace"]
+
+# Randomized decoys: extra "jigsaw pieces" that inflate the puzzle.
+[randomization]
+enabled = true
+seed = 0
+junk_density = 0.35
+decoy_functions = 200
+decoy_strings = 500
+decoy_files = 25
+depth_bomb = 3
+
+# Tarpits: analysis-cost inflation aimed at automated / LLM agents.
+[tarpit]
+enabled = true
+padding_kb = 128
+max_total_kb = 4096
+prompt_gate = true
+honeypots = 25
+
+# One or more targets. `die-a-rea` auto-detects the kind from bytes/extension.
+[[targets]]
+path = "dist/app.js"
+
+[[targets]]
+path = "dist/electron-app"
+
+[[targets]]
+path = "dist/native/app"
+# kind = "native-elf"   # optional explicit kind
+# adapters = ["native-post", "llvm", "agent-canary"]

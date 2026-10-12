@@ -1,0 +1,9 @@
+# high - medium plus control-flow obfuscation, anti-instrumentation and
+# integrity self-checks. Expect a performance/portability cost.
+[policy]
+profile = "high"
+
+[policy.overrides]
+obfuscate_control_flow = true
+anti_instrumentation = true
+integrity_selfcheck = true

@@ -1,0 +1,12 @@
+[package]
+name = "direa-verify"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Resistance-measurement harness for die-a-rea: probes an artifact before and after hardening and produces a Reverse-engineering Resistance Score."
+
+[dependencies]
+direa-core = { path = "../direa-core" }
+serde.workspace = true
+serde_json.workspace = true

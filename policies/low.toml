@@ -1,0 +1,21 @@
+# low - safe to ship everywhere, no behaviour-affecting transforms.
+# Removes the cheapest sources of signal (symbols, source maps, build metadata)
+# and injects an honest authorization notice.
+[policy]
+profile = "low"
+
+[policy.overrides]
+strip_symbols = true
+strip_debug_info = false
+strip_build_metadata = true
+remove_source_maps = true
+encrypt_strings = false
+obfuscate_control_flow = false
+obfuscate_data_flow = false
+pack = false
+anti_debug = false
+anti_instrumentation = false
+integrity_selfcheck = false
+agent_stop_notice = true
+agent_canaries = false
+agent_decoys = false
