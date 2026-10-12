@@ -8,6 +8,7 @@
 
 pub mod adapter;
 pub mod buildmeta;
+pub mod canary;
 pub mod error;
 pub mod guard;
 pub mod manifest;
@@ -23,6 +24,7 @@ pub use adapter::{
     Status, SubprocessAdapter,
 };
 pub use buildmeta::{BuildMetadata, InjectedStats, TargetMetadata};
+pub use canary::DetectionReport;
 pub use error::{DireaError, Result};
 pub use guard::GuardReport;
 pub use manifest::{AgentDefense, Manifest, Project, Randomization, TargetSpec, Tarpit, Verify};

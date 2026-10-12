@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 68 |
+| Tests (`cargo test --all`) | 73 |
 | Backlog items (`B-NNN`) | 22 |
 | Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 24 |
+| Durable lessons (`K-NNN`) | 25 |
 | Decision records (`ADR-NNNN`) | 15 |
 | Markdown docs (tracked) | 34 |
-| Commits in history | 18 |
+| Commits in history | 19 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -181,3 +181,5 @@ to bottom unless a dependency says otherwise.
   Closed `B-016`.
 - **B-015 (commit 18):** Mach-O fat containers + `__DWARF` stripping (K-024).
   Closed `B-015`.
+- **B-008 (commit 19):** `direa_core::canary` module wired into `build`
+  (K-025). Closed `B-008`.

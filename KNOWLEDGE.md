@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-025 — Agent-layer content lives in `direa_core::canary`.** `gate_text`,
+`canary_token`, `decoy_analysis` and `detect_injection` are the single home for
+the authorization gate, traceable tokens, opt-in decoy text (bounded by
+`MAX_DECOY_LINES`) and the prompt-injection detector; `build` consumes them.
+[Evidence: `crates/direa-core/src/canary.rs` (unit tests);
+`crates/direa-cli/src/build.rs`] -> Do not inline gate/canary logic in `build`;
+extend the module. (ADR-0006)
+
 **K-024 — Mach-O fat containers and `__DWARF` need explicit handling.** `detect`
 must recognise the fat magics (`0xcafebabe`/`0xcafebabf`, both byte orders) or
 fat images fall through as `Unknown`; `strip_macho` then iterates slices, and

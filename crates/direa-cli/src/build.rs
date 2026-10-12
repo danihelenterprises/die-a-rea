@@ -11,8 +11,6 @@
 //! Everything is driven by a seeded [`Rng`](direa_core::Rng), so a given seed
 //! reproduces a given layout exactly.
 
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -27,9 +25,6 @@ use direa_core::{
     TargetMetadata, Tarpit,
 };
 use serde::Serialize;
-
-pub const DEFAULT_NOTICE: &str =
-    "This artifact is protected by die-a-rea. Automated reverse engineering requires written authorization.";
 
 const MAX_DECOY_FUNCTIONS: u32 = 20_000;
 const MAX_DECOY_STRINGS: u32 = 50_000;
@@ -72,10 +67,10 @@ pub fn resolve_canaries(manifest: &Manifest, policy: &ResolvedPolicy) -> Vec<Str
             .collect();
     }
     if policy.agent_canaries {
-        let mut h = DefaultHasher::new();
-        manifest.project.name.hash(&mut h);
-        manifest.project.version.hash(&mut h);
-        return vec![format!("DIREA-CANARY-{:016x}", h.finish())];
+        return vec![direa_core::canary::canary_token(
+            &manifest.project.name,
+            &manifest.project.version,
+        )];
     }
     Vec::new()
 }
@@ -89,13 +84,12 @@ pub fn build(
 ) -> Result<BuildResult> {
     let policy = manifest.resolved_policy();
     let canaries = resolve_canaries(manifest, &policy);
+    let base_seed = seed_override.unwrap_or(manifest.randomization.seed);
     let notice = manifest
         .agent_defense
         .notice_text
         .clone()
-        .unwrap_or_else(|| DEFAULT_NOTICE.to_string());
-
-    let base_seed = seed_override.unwrap_or(manifest.randomization.seed);
+        .unwrap_or_else(|| direa_core::canary::gate_text(base_seed));
     let rz = manifest.randomization.clone();
     let tp = manifest.tarpit.clone();
 
@@ -823,6 +817,12 @@ fn generate_js_bundle(
         let (padding, bytes) = generate_padding(rng, tp.padding_kb, tp.max_total_kb, notice);
         out.push_str(&padding);
         stats.padding_bytes += bytes;
+    }
+
+    // Opt-in deceptive analyst notes (bounded; see the canary module).
+    if policy.agent_decoys {
+        let seed = rng.next_u64();
+        out.push_str(&direa_core::canary::decoy_analysis(seed, 40));
     }
 
     stats.injected_bytes = before(&out);
