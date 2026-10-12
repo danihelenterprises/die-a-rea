@@ -17,7 +17,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-002 | Implement the Go adapter (garble: identifiers, literals, strip build info) | High | Adapters | Closed | Built-in Go build-info/ID scrub in `native_post` (K-019); source-level identifier/literal obfuscation via `garble` remains bring-your-own. |
 | B-003 | Implement the JavaScript/Electron adapter (javascript-obfuscator + bytenode/asarmor) | High | Adapters | Closed | Adapter implemented, wired, tested (ADR-0009). Its `string-exposure` clause passes: obfuscated 5/9 baseline tokens survive vs 9/9 for the built-in path (ADR-0011). |
 | B-004 | Implement built-in `native-post` stripping (symbols/debug/build metadata) for ELF/Mach-O/PE | High | Adapters | Closed | In-process `native_post.rs` (ELF/PE/Mach-O); wired via `harden_native`. Mach-O DWARF/fat + PE resources remain follow-ups. |
-| B-005 | Implement the .NET adapter (ConfuserEx driver) | Medium | Adapters | Open | Registry lists `clr`; no implementation. |
+| B-005 | Implement the .NET adapter (ConfuserEx driver) | Medium | Adapters | Closed | `adapters/clr/direa-clr` runs `DIREA_CLR_COMMAND` (ConfuserEx); toolchain bring-your-own (K-027). |
 | B-006 | Implement the Android/JVM adapter (R8/ProGuard config generation) | Medium | Adapters | Open | Registry lists `android`; Promises GPL tool stays subprocess-only (ADR-0007). |
 | B-007 | Add a runtime guard library and wire the `runtime-instrumentation-exposure` RRS axis | High | Runtime | Closed | `direa_core::guard` + `verify --with-runtime` (ADR-0014, K-020); detects debugger/Frida/inspector from the environment. |
 | B-021 | Honor `[runtime] instrumentation_signatures` in the guard | Low | Runtime | Closed | `guard::detect_with` + `verify` reads the manifest list (empty = built-in defaults). |
@@ -81,3 +81,4 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   in ADR-0016.
 - **B-001 (Closed, commit 22):** generic external-adapter discovery + the LLVM
   reference adapter (K-027).
+- **B-005 (Closed, commit 23):** `.NET` reference adapter (`direa-clr`).

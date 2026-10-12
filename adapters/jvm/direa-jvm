@@ -1,0 +1,112 @@
+#!/usr/bin/env node
+/*
+ * direa-jvm — die-a-rea adapter for JVM / Android artifacts (jars, AAB, APK).
+ *
+ * Wraps an operator-supplied shrinker/obfuscator (R8 or ProGuard) via
+ * `DIREA_JVM_COMMAND`, a shell command with `{artifact}` and `{out}`
+ * placeholders. Never links copyleft code: ProGuard runs as a subprocess
+ * (ADR-0007/0009).
+ *
+ * Example:
+ *   export DIREA_JVM_ADAPTER=/path/to/adapters/jvm/direa-jvm
+ *   export DIREA_JVM_COMMAND="r8 {artifact} --release --output {out}"
+ *
+ * Protocol: one JSON request on stdin, one JSON response on stdout (ADR-0002).
+ */
+'use strict';
+
+const fs = require('fs');
+const { execSync } = require('child_process');
+
+function readStdin() {
+  try {
+    return fs.readFileSync(0, 'utf8');
+  } catch (_) {
+    return '';
+  }
+}
+function emit(obj) {
+  process.stdout.write(JSON.stringify(obj));
+}
+
+function main() {
+  const adapter = 'jvm';
+  let req;
+  try {
+    req = JSON.parse(readStdin() || '{}');
+  } catch (e) {
+    emit({
+      adapter,
+      status: 'error',
+      findings: [{ severity: 'error', code: 'bad_request', message: String(e) }],
+      message: 'invalid JSON request',
+    });
+    return;
+  }
+
+  const op = req.op || 'plan';
+  const build = process.env.DIREA_JVM_COMMAND;
+
+  if (op === 'capabilities' || op === 'verify') {
+    emit({
+      adapter,
+      status: build ? 'ok' : 'unavailable',
+      steps: [],
+      findings: [],
+      metrics: { engine: build ? 'configured-command' : 'none' },
+      message: build ? 'ready (DIREA_JVM_COMMAND set)' : 'set DIREA_JVM_COMMAND (R8/ProGuard)',
+    });
+    return;
+  }
+
+  if (!build) {
+    emit({
+      adapter,
+      status: 'unavailable',
+      steps: [],
+      findings: [],
+      metrics: {},
+      message: 'DIREA_JVM_COMMAND not set; JVM/Android protection is bring-your-own',
+    });
+    return;
+  }
+
+  const out = (req.options && req.options.out) || '';
+  const cmd = build
+    .replace(/\{artifact\}/g, req.target || '')
+    .replace(/\{out\}/g, out);
+
+  if (op === 'plan') {
+    emit({
+      adapter,
+      status: 'ok',
+      steps: [{ adapter, action: 'protect', detail: cmd, external: true, destructive: true }],
+      findings: [],
+      metrics: {},
+      message: 'would run the configured JVM/Android protector',
+    });
+    return;
+  }
+
+  try {
+    execSync(cmd, { stdio: 'inherit' });
+    emit({
+      adapter,
+      status: 'ok',
+      steps: [{ adapter, action: 'protect', detail: cmd, external: true, destructive: true }],
+      findings: [],
+      metrics: {},
+      message: 'ran the configured JVM/Android protector',
+    });
+  } catch (e) {
+    emit({
+      adapter,
+      status: 'error',
+      steps: [],
+      findings: [{ severity: 'error', code: 'protect_failed', message: String(e.message || e) }],
+      message: 'configured JVM/Android protector failed',
+    });
+  }
+}
+
+main();

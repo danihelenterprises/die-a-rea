@@ -123,7 +123,7 @@ to bottom unless a dependency says otherwise.
 | Durable lessons (`K-NNN`) | 27 |
 | Decision records (`ADR-NNNN`) | 16 |
 | Markdown docs (tracked) | 35 |
-| Commits in history | 22 |
+| Commits in history | 23 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -189,3 +189,5 @@ to bottom unless a dependency says otherwise.
   ADR-0016. Closed `B-013`.
 - **B-001 (commit 22):** generic external-adapter discovery + LLVM reference
   adapter (K-027). Closed `B-001`.
+- **B-005 (commit 23):** `.NET` reference adapter `adapters/clr/direa-clr`.
+  Closed `B-005`.
