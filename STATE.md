@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 78 |
+| Tests (`cargo test --all`) | 79 |
 | Backlog items (`B-NNN`) | 27 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 28 |
+| Durable lessons (`K-NNN`) | 29 |
 | Decision records (`ADR-NNNN`) | 16 |
 | Markdown docs (tracked) | 35 |
-| Commits in history | 25 |
+| Commits in history | 26 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -195,3 +195,5 @@ to bottom unless a dependency says otherwise.
   Closed `B-006`.
 - **B-023 (commit 25):** embedded the JS runtime guard (K-028); opened `B-027`
   (native embedding). Closed `B-023`.
+- **B-024 (commit 26):** pluggable external detector + broadened corpus (K-029).
+  Closed `B-024`.

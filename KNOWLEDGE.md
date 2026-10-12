@@ -130,6 +130,16 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-029 — The gauntlet accepts an external detector.** `canary::gauntlet_with`
+takes an optional `Fn(&str) -> bool`; a sample counts as detected if the built-in
+regex detector **or** the external hook flags it. `die-a-rea canary-selftest
+--detector <cmd>` wires a command (stdin = text, exit 0 = injection), letting an
+ML/hosted classifier extend coverage without bundling a model. [Evidence:
+`crates/direa-core/src/canary.rs` (`gauntlet_with`, test
+`external_detector_is_consulted`); `crates/direa-cli/src/main.rs`
+(`run_detector`)] -> Keep the built-in detector dependency-free; put ML behind the
+hook. (ADR-0006)
+
 **K-028 — The runtime guard is embedded into JS artifacts.** When
 `policy.anti_instrumentation` is set, `build` appends `guard::JS_GUARD_SOURCE` to
 JS/Electron files (single-file and tree); it is behavior-safe (records

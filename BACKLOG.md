@@ -23,7 +23,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-021 | Honor `[runtime] instrumentation_signatures` in the guard | Low | Runtime | Closed | `guard::detect_with` + `verify` reads the manifest list (empty = built-in defaults). |
 | B-022 | Docker toolchain (runtime + dev images) with robust error handling | Medium | Tooling | Closed | `docker/Dockerfile` (build/runtime/dev), `entrypoint.sh` (fail-fast), `compose.yml` (ADR-0015, K-021). |
 | B-023 | Embed the runtime guard into artifacts (not just the environment) | Medium | Runtime | Closed | Behavior-safe JS/Electron guard injected when `anti_instrumentation` is set (K-028); native embedding tracked as B-027. |
-| B-024 | Pluggable/external detector behind the gauntlet; broaden the corpus | Medium | Agent | Open | Add an external detector command and more injection styles. |
+| B-024 | Pluggable/external detector behind the gauntlet; broaden the corpus | Medium | Agent | Closed | `canary::gauntlet_with` + `canary-selftest --detector`; corpus broadened to 7 styles (K-029). |
 | B-025 | Real-toolchain CI lanes for the adapters (Pluto/ConfuserEx/R8) as optional jobs | Low | Tooling | Open | Optional CI jobs exercising the external adapters. |
 | B-026 | Real control-flow probe (decompiler-based) instead of the x86-prologue proxy | Medium | RRS | Open | Make the control-flow axis external/opt-in; skip when unconfigured. |
 | B-027 | Embed the runtime guard into native artifacts | Low | Runtime | Open | Requires a linked guard library (C/Rust); JS embedding is done (B-023). |
@@ -90,3 +90,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 - **B-006 (Closed, commit 24):** JVM/Android reference adapter (`direa-jvm`).
 - **B-023 (Closed, commit 25):** behavior-safe JS runtime guard embedded by
   `build` (K-028); native embedding opened as B-027.
+- **B-024 (Closed, commit 26):** external detector hook + broader corpus
+  (K-029).

@@ -43,6 +43,9 @@ enum Command {
 
     /// Run the agent-defense detector gauntlet (CI-friendly; exits non-zero on failure).
     CanarySelftest {
+        /// Optional external detector command (stdin = text, exit 0 = injection).
+        #[arg(long)]
+        detector: Option<String>,
         /// Emit machine-readable JSON.
         #[arg(long)]
         json: bool,
@@ -132,7 +135,7 @@ fn main() -> Result<()> {
             force,
         } => cmd_init(&cli.manifest, name, targets, force),
         Command::Profiles => cmd_profiles(),
-        Command::CanarySelftest { json } => cmd_canary_selftest(json),
+        Command::CanarySelftest { detector, json } => cmd_canary_selftest(detector, json),
         Command::Plan { json } => cmd_plan(&cli.manifest, json),
         Command::Build {
             out,
@@ -214,8 +217,35 @@ fn cmd_profiles() -> Result<()> {
     Ok(())
 }
 
-fn cmd_canary_selftest(json: bool) -> Result<()> {
-    let report = direa_core::canary::gauntlet();
+/// Run an external detector command over `text`; exit 0 means "injection".
+fn run_detector(command: &str, text: &str) -> bool {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    let mut child = match Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+    {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+    if let Some(mut stdin) = child.stdin.take() {
+        let _ = stdin.write_all(text.as_bytes());
+    }
+    child.wait().map(|s| s.success()).unwrap_or(false)
+}
+
+fn cmd_canary_selftest(detector: Option<String>, json: bool) -> Result<()> {
+    let report = match &detector {
+        Some(cmd) => {
+            let hook = |s: &str| run_detector(cmd, s);
+            direa_core::canary::gauntlet_with(Some(&hook))
+        }
+        None => direa_core::canary::gauntlet(),
+    };
     if json {
         println!("{}", serde_json::to_string_pretty(&report)?);
     } else {
