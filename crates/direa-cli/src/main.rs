@@ -679,6 +679,10 @@ fn cmd_canary_selftest(ui: &Ui, detector: Option<String>, json: bool) -> Result<
             report.adversarial_detected, report.adversarial_total
         ));
         ui.out(format!(
+            "evasion detected: {}/{}",
+            report.evasion_detected, report.evasion_total
+        ));
+        ui.out(format!(
             "own payloads flagged: {}/{}",
             report.payload_flagged, report.payload_total
         ));

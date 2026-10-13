@@ -339,3 +339,16 @@ magic is preserved, then runs the opt-in `[verify] command` and, if enabled,
 `crates/direa-cli/src/build.rs` (`post_build_check`); test
 `post_build_check_fails_on_bad_command`] -> The check must stay fatal; a broken
 hardened artifact must never ship. (ADR-0013)
+
+**K-044 — Substring detection is defeated by cheap text transformations.**
+Zero-width characters (`U+200B`), whitespace runs/newlines, Unicode homoglyphs
+(Cyrillic `о` for ASCII `o`) and HTML entities (`&#105;` for `i`) all break a
+plain lowercase `contains` while remaining readable to a model. The built-in
+detector must therefore match on a normalized form (decode entities, strip
+invisibles, fold homoglyphs, collapse whitespace) and the gauntlet must include a
+red-team corpus that a naive matcher provably misses. [Evidence:
+`crates/direa-core/src/canary.rs` (`normalize_for_detection`, `EVASION_CORPUS`,
+tests `detector_normalizes_common_evasions`,
+`evasion_corpus_defeats_naive_matching`); ADR-0020] -> Keep normalization pure and
+test both directions (evasions caught, benign text clean); treat it as a floor,
+never a guarantee. (ADR-0004, ADR-0020)

@@ -9,15 +9,15 @@
 **Read once, in this order:** `AGENTS.md` → `STATE.md` → `docs/README.md` →
 `BACKLOG.md` → `KNOWLEDGE.md`. Then look facts up by id.
 
-**Current state (verified 2026-10-12).** die-a-rea is an early scaffold: a Rust
-Cargo workspace with three crates (`direa-core`, `direa-cli`, `direa-verify`).
-`cargo build`, `cargo fmt --check`, `cargo clippy -D warnings` and
-`cargo test --all` (37 tests) all pass. The built-in pipeline hardens JS/tree
-targets (source-map + comment stripping, notice/canary injection, seeded decoys,
-bounded tarpits) and writes a `die-a-rea.build.json` sidecar; `verify` reports an
-RRS with signal-to-noise and analysis-noise axes. Deep per-ecosystem adapters
-(LLVM/Go/JS/.NET/Android) and the runtime guard are **not implemented** (B-001…
-B-007). The repository has no remote yet (B-010).
+**Current state (verified 2026-10-12).** die-a-rea is a Rust Cargo workspace
+(`direa-core`, `direa-cli`, `direa-verify`, `direa-ffi`). `cargo build`,
+`cargo fmt --check`, `cargo clippy -D warnings` and `cargo test --all` all pass;
+`die-a-rea bench --check` and `canary-selftest` are green in CI. The built-in
+pipeline hardens JS/tree, ELF/PE/Mach-O (incl. Go), WASM and Java targets and
+writes a `die-a-rea.build.json` sidecar; `verify` reports an RRS. External
+adapters (LLVM/JavaScript/.NET/JVM) and the runtime guard are implemented. See
+"What works end-to-end today" for the verified detail and the Appendix for
+history; open work lives in `BACKLOG.md`.
 
 **I want… → Go to**
 
@@ -116,14 +116,14 @@ to bottom unless a dependency says otherwise.
 
 | Metric | Value |
 |---|---|
-| Rust crates | 3 |
-| Tests (`cargo test --all`) | 93 |
-| Backlog items (`B-NNN`) | 40 |
+| Rust crates | 4 |
+| Tests (`cargo test --all`) | 96 |
+| Backlog items (`B-NNN`) | 41 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 43 |
-| Decision records (`ADR-NNNN`) | 19 |
-| Markdown docs (tracked) | 40 |
-| Commits in history | 42 |
+| Durable lessons (`K-NNN`) | 44 |
+| Decision records (`ADR-NNNN`) | 20 |
+| Markdown docs (tracked) | 42 |
+| Commits in history | 47 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -222,3 +222,9 @@ to bottom unless a dependency says otherwise.
   K-042). Closed `B-039`.
 - **B-040 (commit 42):** bench corpus across JS/WASM/Java/ELF + README language
   table (K-043). Closed `B-040`.
+- **B-041 (commit 43):** canary detector normalizes before matching; gauntlet
+  carries a red-team evasion corpus a naive matcher misses (ADR-0020, K-044).
+  Closed `B-041`.
+- **Doc-truth (same change):** refreshed the stale HUB current-state paragraph
+  and corrected the canonical counters (crates, tracked docs, commit count) as
+  part of the B-041 doc-sync.

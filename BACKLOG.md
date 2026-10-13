@@ -53,6 +53,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-018 | Make the `strings` axis respond to string encoding | High | RRS | Closed | Solved as verbatim survival rather than base64 detection (ADR-0011, K-016): obfuscated JS now scores 0.56. |
 | B-019 | Guard `build` against overwriting the source artifact or a foreign output directory | High | CLI | Closed | `guard_source_and_output` plus the non-empty-`--out` check; `--force` overrides (ADR-0012, K-017). |
 | B-020 | Post-build health check so a broken hardened artifact fails the build | High | CLI | Closed | Always-on structural check plus opt-in `[verify]` command / `js_syntax` (ADR-0013, K-018). |
+| B-041 | Red-team the canary detector against cheap evasions and harden it | Medium | Agent | Closed | Detector normalizes (entities/homoglyphs/invisibles/whitespace); `EVASION_CORPUS` + gauntlet gate + naive-matcher test (ADR-0020, K-044). |
 
 ## Closed / Decided
 
@@ -130,3 +131,6 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   (ADR-0019, K-042).
 - **B-040 (Closed, commit 42):** bench corpus across formats (K-043); README
   language-support table.
+- **B-041 (Closed, commit 43):** the canary detector normalizes before matching
+  and the gauntlet carries a red-team evasion corpus a naive matcher misses
+  (ADR-0020, K-044).
