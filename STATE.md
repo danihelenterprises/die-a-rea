@@ -118,12 +118,12 @@ to bottom unless a dependency says otherwise.
 |---|---|
 | Rust crates | 4 |
 | Tests (`cargo test --all`) | 96 |
-| Backlog items (`B-NNN`) | 41 |
-| Open backlog items (High) | 0 |
+| Backlog items (`B-NNN`) | 51 |
+| Open backlog items (High) | 1 |
 | Durable lessons (`K-NNN`) | 44 |
 | Decision records (`ADR-NNNN`) | 20 |
 | Markdown docs (tracked) | 42 |
-| Commits in history | 47 |
+| Commits in history | 48 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -228,3 +228,6 @@ to bottom unless a dependency says otherwise.
 - **Doc-truth (same change):** refreshed the stale HUB current-state paragraph
   and corrected the canonical counters (crates, tracked docs, commit count) as
   part of the B-041 doc-sync.
+- **Gap review:** per-ecosystem capability audit opened `B-042`–`B-051`
+  (Android/asar/Go/WASM/JVM/guard-parity probes/REA/init/bench/doctor gaps); no
+  behaviour change.

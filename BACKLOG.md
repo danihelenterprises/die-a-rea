@@ -54,6 +54,16 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-019 | Guard `build` against overwriting the source artifact or a foreign output directory | High | CLI | Closed | `guard_source_and_output` plus the non-empty-`--out` check; `--force` overrides (ADR-0012, K-017). |
 | B-020 | Post-build health check so a broken hardened artifact fails the build | High | CLI | Closed | Always-on structural check plus opt-in `[verify]` command / `js_syntax` (ADR-0013, K-018). |
 | B-041 | Red-team the canary detector against cheap evasions and harden it | Medium | Agent | Closed | Detector normalizes (entities/homoglyphs/invisibles/whitespace); `EVASION_CORPUS` + gauntlet gate + naive-matcher test (ADR-0020, K-044). |
+| B-042 | Built-in hardening for Android APK (DEX/resources), or an explicit toolchain-only stance | Medium | Adapters | Open | Detection + verification only today; `jvm`/R8 is the sole path. Per-ecosystem gap audit 2026-10-12. |
+| B-043 | Fix single-file Electron `.asar` handling (binary archive read as UTF-8) | High | Adapters | Open | `build` routes a `.asar` file through `harden_text_file`, which fails `reading … as UTF-8` (confirmed repro); needs archive-aware handling (e.g. asarmor). |
+| B-044 | Bundle reference adapters for Go (`garble`) and WASM (`wasm-opt`/`wasm-mutate`) | Medium | Adapters | Open | Registry entries `go`/`wasm` exist but no `adapters/{go,wasm}/direa-*` scripts, unlike clr/js/jvm/llvm. |
+| B-045 | Add a JVM `.class`/`.jar` external adapter lane | Medium | Adapters | Open | `jvm` is registered for `AndroidApk` only; `.class` gets `java-post` alone and a `.jar` is typed `Unknown`. |
+| B-046 | Extend guard embedding and canary/decoy/tarpit parity beyond JS | Medium | Runtime | Open | Canaries/notice/decoys are embedded only for JS; tarpits skip WASM/Java/APK; the native guard is link-time only. |
+| B-047 | Add managed/bytecode/WASM RRS probes (Java, DEX, WASM names, .NET) | Medium | RRS | Open | `debug-info` matches native markers only, so `java-post`/`wasm-post` wins are unmeasured (K-042). |
+| B-048 | Extend the real REA adversary (`--with-rea`) beyond JS/asar targets | Medium | RRS | Open | `run_rea` uses `rea_js_target`, so only JS/Electron can gate on the adversary. |
+| B-049 | Broaden `init` artifact discovery (Go/.NET/Android/C-C++) | Low | Tooling | Open | `discover` reads Cargo.toml/package.json/pom.xml only. |
+| B-050 | Add bench fixtures for PE/Mach-O/Go/.NET/asar/APK | Medium | RRS | Open | `bench --check` covers JS file/tree, WASM, Java class and ELF only (K-043). |
+| B-051 | Teach `doctor` about `wasm-opt` and a decompiler for the control-flow axis | Low | Tooling | Open | Tool list has node/garble/clang/dotnet/r8/nm/objdump but no wasm tool or Ghidra. |
 
 ## Closed / Decided
 
