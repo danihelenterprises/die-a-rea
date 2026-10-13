@@ -256,7 +256,7 @@ fn cmd_init(
     ui: &Ui,
     path: &PathBuf,
     name: Option<String>,
-    targets: Vec<String>,
+    mut targets: Vec<String>,
     force: bool,
 ) -> Result<()> {
     if path.exists() && !force {
@@ -271,6 +271,20 @@ fn cmd_init(
             .and_then(|d| d.file_name().map(|n| n.to_string_lossy().to_string()))
             .unwrap_or_else(|| "app".to_string())
     });
+    if targets.is_empty() {
+        let root = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let found = direa_core::discover::discover(&root);
+        if found.is_empty() {
+            ui.info(
+                1,
+                "no shipped artifacts discovered; edit die-a-rea.toml to add targets",
+            );
+        }
+        for d in &found {
+            ui.info(1, format!("discovered {} ({})", d.path.display(), d.reason));
+        }
+        targets = found.iter().map(|d| d.path.display().to_string()).collect();
+    }
     let content = Manifest::starter(&name, &targets);
     std::fs::write(path, content).with_context(|| format!("writing {}", path.display()))?;
     ui.info(2, format!("starter manifest for project '{name}'"));

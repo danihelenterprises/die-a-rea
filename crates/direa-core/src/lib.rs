@@ -9,6 +9,7 @@
 pub mod adapter;
 pub mod buildmeta;
 pub mod canary;
+pub mod discover;
 pub mod error;
 pub mod guard;
 pub mod java;

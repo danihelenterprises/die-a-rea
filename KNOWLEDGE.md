@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-037 — `init` discovers shipped artifacts.** `direa_core::discover` reads
+`Cargo.toml` (target/release|debug/<name>), `package.json` (main/bin/dist/asar),
+and `pom.xml`/Gradle (`target/*.jar`, `build/libs/*.jar`), falling back to
+`dist/`; `die-a-rea init` with no targets uses it. [Evidence:
+`crates/direa-core/src/discover.rs` (tests); `crates/direa-cli/src/main.rs`
+(`cmd_init`)] -> Keep discovery heuristic and non-failing; it never replaces an
+explicit target. (Open)
+
 **K-036 — WASM and Java `.class` have toolchain-free built-in post.** `wasm-post`
 empties custom-section names and zeroes their payloads (framing stays valid);
 `java-post` zeroes constant-pool `Utf8` names of debug-only attributes

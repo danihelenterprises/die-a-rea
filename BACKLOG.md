@@ -33,7 +33,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-031 | `die-a-rea explain <id>` for K/ADR/B entries | Low | Tooling | Closed | `die-a-rea explain <id> [--root DIR] [--json]` (K-035). |
 | B-032 | Toolchain-free post for WASM and Java `.class` | Medium | Adapters | Closed | `wasm-post` (custom sections) + `java-post` (debug attributes) (K-036). |
 | B-033 | GitHub Action for one-line integration | Medium | Tooling | Closed | Composite `action.yml` installing the CLI and running `args`. |
-| B-034 | Config auto-discovery and smarter `init` | Medium | Tooling | Open | Detect project type and shipped outputs. |
+| B-034 | Config auto-discovery and smarter `init` | Medium | Tooling | Closed | `direa_core::discover` used by `init` (K-037). |
 | B-035 | Publish crates + release binaries + optional C ABI | Medium | Tooling | Open | crates.io metadata, release workflow, `direa-ffi`. |
 | B-036 | Cross-platform guard detection (Windows/macOS) | Medium | Runtime | Open | `IsDebuggerPresent`, macOS `P_TRACED`. |
 | B-037 | SARIF and JUnit output for CI | Low | Tooling | Open | Machine-readable reports. |
@@ -116,3 +116,4 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 - **B-032 (Closed, commit 34):** toolchain-free WASM + Java `.class` post
   (K-036).
 - **B-033 (Closed, commit 35):** composite GitHub Action.
+- **B-034 (Closed, commit 36):** artifact discovery in `init` (K-037).

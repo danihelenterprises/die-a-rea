@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 85 |
+| Tests (`cargo test --all`) | 87 |
 | Backlog items (`B-NNN`) | 37 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 36 |
+| Durable lessons (`K-NNN`) | 37 |
 | Decision records (`ADR-NNNN`) | 18 |
 | Markdown docs (tracked) | 38 |
-| Commits in history | 35 |
+| Commits in history | 36 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -211,3 +211,4 @@ to bottom unless a dependency says otherwise.
 - **B-032 (commit 34):** WASM + Java `.class` built-in post (K-036); opened
   B-033..B-037. Closed `B-032`.
 - **B-033 (commit 35):** composite GitHub Action. Closed `B-033`.
+- **B-034 (commit 36):** artifact discovery in `init` (K-037). Closed `B-034`.

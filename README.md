@@ -87,7 +87,8 @@ cargo build --release
 In your project directory:
 
 ```bash
-die-a-rea init --name my-app dist/app.js dist/electron-app
+die-a-rea init --name my-app            # discovers shipped artifacts automatically
+# (or list them: die-a-rea init --name my-app dist/app.js dist/electron-app)
 # review and edit die-a-rea.toml, then:
 die-a-rea plan                                                   # dry run
 die-a-rea build --out dist-hardened --seed 2026                  # harden
