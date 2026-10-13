@@ -346,16 +346,14 @@ fn count_occurrences(haystack: &[u8], needle: &[u8]) -> usize {
         .count()
 }
 
-/// Locate a conventional REA JavaScript target entry for the optional REA probe.
-pub fn rea_js_target(target: &Path) -> Option<PathBuf> {
-    if target.is_dir() && target.join("package.json").exists() {
-        return Some(target.to_path_buf());
-    }
-    target
-        .extension()
-        .map(|e| e.eq_ignore_ascii_case("asar"))
-        .unwrap_or(false)
-        .then(|| target.to_path_buf())
+/// Locate a target for the optional external REA adversary.
+///
+/// The adversary is bring-your-own: its provider is chosen by the configured
+/// command, so any existing artifact (JS/Electron, native, WASM, Java, ...) is
+/// handed over and the adversary reports what it could do. Only a missing path
+/// yields `None` (B-048).
+pub fn rea_target(target: &Path) -> Option<PathBuf> {
+    (target.is_file() || target.is_dir()).then(|| target.to_path_buf())
 }
 
 /// All default probes, in report order. The control-flow axis is intentionally

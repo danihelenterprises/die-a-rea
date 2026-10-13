@@ -128,7 +128,7 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 137 |
+| Tests (`cargo test --all`) | 139 |
 | Backlog items (`B-NNN`) | 59 |
 | Open backlog items (High) | 0 |
 | Durable lessons (`K-NNN`) | 59 |
@@ -312,3 +312,6 @@ counted here (one fact, one home).
   Adler-32 checksum), and notes that the APK signature is invalidated (re-sign).
   Resources are preserved (K-023); deeper obfuscation stays with the `jvm`
   adapter. Bench `android-apk` rose 0 → 21. Closed `B-042`.
+- **B-048:** the optional REA adversary (`verify --with-rea`) no longer gates
+  on JS/asar; `probes::rea_target` hands any existing artifact to the configured
+  `--rea` command (the default remains the JS provider). Closed `B-048`.

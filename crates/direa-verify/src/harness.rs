@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use direa_core::{Axis, AxisMeasurement, BuildMetadata, ResistanceReport, TargetMetadata};
 use serde::{Deserialize, Serialize};
 
-use crate::probes::{default_probes, rea_js_target, Probe, ProbeKind};
+use crate::probes::{default_probes, rea_target, Probe, ProbeKind};
 
 /// Options controlling a verification run.
 #[derive(Debug, Clone)]
@@ -127,7 +127,9 @@ pub fn run(opts: &VerifyOptions) -> Result<VerifyRun, String> {
                 ));
                 rea = Some(obs);
             }
-            None => notes.push("REA adversary skipped (target not JavaScript-shaped)".to_string()),
+            None => {
+                notes.push("REA adversary skipped (hardened target does not exist)".to_string())
+            }
         }
     }
 
@@ -264,7 +266,7 @@ fn exposures(kind: ProbeKind, baseline: f64, hardened: f64) -> (f64, f64) {
 
 /// Run REA as an external adversary against the hardened artifact.
 fn run_rea(opts: &VerifyOptions) -> Option<ReaObservation> {
-    let target = rea_js_target(&opts.hardened)?;
+    let target = rea_target(&opts.hardened)?;
     if opts.rea_command.is_empty() {
         return None;
     }
@@ -380,6 +382,27 @@ mod tests {
     fn parses_canaries() {
         let hits = collect_canaries("blah DIREA-CANARY-abc123, and DIREA-CANARY-abc123 again");
         assert_eq!(hits, vec!["DIREA-CANARY-abc123".to_string()]);
+    }
+
+    #[test]
+    fn rea_runs_against_any_artifact() {
+        // A native ELF (not JS/asar) must still be handed to the configured REA.
+        let target = write_tmp("rea.bin", b"\x7fELF\x02\x01\x01\x00padding");
+        let mut opts = VerifyOptions::new(&target, &target);
+        opts.with_rea = true;
+        opts.rea_command = vec!["sh".into(), "-c".into(), "echo DIREA-CANARY-zzz".into()];
+        let obs = run_rea(&opts).expect("a native target must be analyzable");
+        assert!(obs.available && obs.succeeded);
+        assert_eq!(obs.canary_hits, vec!["DIREA-CANARY-zzz".to_string()]);
+        let _ = std::fs::remove_file(target);
+    }
+
+    #[test]
+    fn rea_skips_a_missing_target() {
+        let mut opts = VerifyOptions::new("direa-no-such-orig", "direa-no-such-hard");
+        opts.with_rea = true;
+        opts.rea_command = vec!["sh".into(), "-c".into(), "echo hi".into()];
+        assert!(run_rea(&opts).is_none());
     }
 
     #[test]
