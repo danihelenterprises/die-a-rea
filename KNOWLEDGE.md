@@ -395,3 +395,14 @@ returned `javascript`/`dotnet`/`native-macho`. So `plan --json` and the manifest
 `serialized_kind_matches_as_str`); found by the test bowl (B-052)] -> When a value
 is both displayed and serialized, pin the wire name explicitly and test that it
 equals the display name. (B-054)
+
+**K-049 — Container formats must not be routed through text transforms.** A
+`.asar` file is a binary archive, but `build` sent an Electron `.asar` through the
+UTF-8 JavaScript path, so a real archive failed with "stream did not contain valid
+UTF-8" (B-043). Text transforms (source-map/comment strip, notice/canary
+injection) must be gated on files that are actually text; a container is copied
+verbatim, or handled by a format-aware reader/adapter (the JS adapter is
+registered for Electron). [Evidence: `crates/direa-cli/src/build.rs`
+(`ElectronAsar` file arm; test `asar_file_is_copied_not_decoded_as_utf8`); the
+test bowl surfaced it (B-052)] -> Gate a transform on content shape, not on the
+extension that selected the target kind. (B-043, B-055)

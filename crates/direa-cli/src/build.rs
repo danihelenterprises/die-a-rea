@@ -172,7 +172,7 @@ pub fn build(
         let mut injected = InjectedStats::default();
 
         match kind {
-            TargetKind::JavaScript | TargetKind::ElectronAsar if src.is_file() => {
+            TargetKind::JavaScript if src.is_file() => {
                 actions.push("strip source maps".into());
                 actions.push("strip full-line comments".into());
                 if policy.agent_stop_notice {
@@ -187,6 +187,23 @@ pub fn build(
                     injected = harden_text_file(
                         src, &dest, &policy, &notice, &canaries, &rz, &tp, &mut rng,
                     )?;
+                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
+                }
+            }
+            TargetKind::ElectronAsar if src.is_file() => {
+                // A single-file `.asar` is a binary archive: the built-in text
+                // transforms do not apply and decoding it as UTF-8 fails (B-043).
+                // Copy it verbatim and defer to an external adapter (e.g. asarmor);
+                // built-in asar unpack/harden/repack is not implemented.
+                actions.push(
+                    "copy .asar archive verbatim (built-in asar transforms not implemented; use an adapter)"
+                        .into(),
+                );
+                if !dry_run {
+                    ensure_parent(&dest)?;
+                    std::fs::copy(src, &dest).with_context(|| {
+                        format!("copying {} to {}", src.display(), dest.display())
+                    })?;
                     apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
                 }
             }
@@ -1188,6 +1205,35 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
         // dest elsewhere is fine
         let elsewhere = dir.join("out").join("app.js");
         assert!(guard_source_and_output(&src, &elsewhere).is_ok());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn asar_file_is_copied_not_decoded_as_utf8() {
+        // A binary .asar must not be routed through the UTF-8 text path (B-043).
+        let dir = std::env::temp_dir().join(format!("direa-asar-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("app.asar");
+        std::fs::write(&src, b"\x04\x00\x00\x00\xff\xfe binary archive").unwrap();
+
+        let manifest = Manifest {
+            targets: vec![direa_core::TargetSpec {
+                path: src.clone(),
+                kind: None,
+                adapters: vec![],
+            }],
+            ..Default::default()
+        };
+        let out = dir.join("out");
+        let res = build(&manifest, &out, false, Some(1), false)
+            .expect("a single-file .asar must build without a UTF-8 error");
+        assert_eq!(res.targets.len(), 1);
+        assert!(
+            res.targets[0].actions.iter().any(|a| a.contains("asar")),
+            "the .asar branch must handle the archive"
+        );
+        assert!(out.join("app.asar").exists(), "archive must be written");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

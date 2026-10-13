@@ -40,7 +40,7 @@ and installs Node + `javascript-obfuscator` + `@electron/asar`). Results land in
 | `gson` | [google/gson](https://github.com/google/gson) 2.11.0 | Java `.class` | ok |
 | `sqljs` | [sql-js/sql.js](https://github.com/sql-js/sql.js) 1.10.3 | WebAssembly | ok |
 | `termux` | [termux/termux-app](https://github.com/termux/termux-app) v0.118.1 | Android APK | ok (detect/verify only) |
-| `asar` | Electron `.asar` (harness-generated) | Electron | **known gap** (B-043) |
+| `asar` | Electron `.asar` (harness-generated) | Electron | ok (copied; B-055) |
 
 ## Reading the output
 
@@ -79,7 +79,8 @@ command is run, so untrusted artifacts are never executed.
 - It tests the **built-in** transforms and auto-detection; the external adapters
   (LLVM/CLR/JVM, `garble`, `wasm-opt`) are bring-your-own and are not exercised
   here except the JS path (the image ships `javascript-obfuscator`).
-- `asar` is expected to fail today (single-file `.asar` read as UTF-8, B-043).
+- `asar` is copied verbatim (built-in asar transforms are not implemented,
+  B-055); the case verifies it no longer errors on a binary archive (B-043).
 - Windows (PE) and macOS (Mach-O) artifacts are not fetched; the native path is
   covered via ELF.
 - Auto-detection now classifies `fzf` (Go) and `Newtonsoft.Json` (.NET)

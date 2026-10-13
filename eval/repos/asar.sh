@@ -1,9 +1,10 @@
-# Case: Electron .asar — a tiny app packed into an asar archive. This currently
-# FAILS: a single-file `.asar` is routed through the UTF-8 text path and errors
-# (B-043). EXPECT="fail" records it as a known gap instead of a harness failure.
+# Case: Electron .asar — a tiny app packed into an asar archive. Built-in asar
+# transforms are not implemented (B-055), so `build` copies the archive verbatim
+# and defers to an adapter; this verifies the copy path no longer errors on a
+# binary archive (B-043).
 ECOSYSTEM="Electron .asar"
 KIND=""
-EXPECT="fail"
+EXPECT="ok"
 LICENSE="harness-generated (no third-party code)"
 REPO="https://github.com/electron/asar"
 VERSION="harness-generated"

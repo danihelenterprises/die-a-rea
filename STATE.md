@@ -121,10 +121,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 99 |
-| Backlog items (`B-NNN`) | 54 |
-| Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 48 |
+| Tests (`cargo test --all`) | 100 |
+| Backlog items (`B-NNN`) | 55 |
+| Open backlog items (High) | 0 |
+| Durable lessons (`K-NNN`) | 49 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -251,3 +251,7 @@ counted here (one fact, one home).
 - **B-054 (K-048):** explicit `TargetKind` serde renames so the JSON/manifest
   name matches `as_str()` (`native-macho`/`dotnet`/`javascript`, was
   `native-mach-o`/`dot-net`/`java-script`). Closed `B-054`.
+- **B-043 (K-049):** single-file `.asar` is copied verbatim (opaque archive) and
+  deferred to an adapter instead of being decoded as UTF-8; the test bowl `asar`
+  case now succeeds. Closed `B-043`; opened `B-055` for real built-in asar
+  transforms.
