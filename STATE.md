@@ -125,7 +125,7 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 119 |
+| Tests (`cargo test --all`) | 120 |
 | Backlog items (`B-NNN`) | 58 |
 | Open backlog items (High) | 0 |
 | Durable lessons (`K-NNN`) | 57 |
@@ -290,3 +290,7 @@ counted here (one fact, one home).
   tool's stdout/stderr (like `go`/`wasm`) instead of inheriting them, so tool
   output no longer corrupts the JSON response and failures surface it;
   `crates/direa-cli/tests/adapters.rs` guards the behavior. Closed `B-057`.
+- **B-051:** `doctor` now reports the WASM toolchain (`wasm-opt`, `wasm-mutate`,
+  `wasm2wat`, `wat2wasm`) and common decompilers (`ghidra`, `analyzeHeadless`,
+  `radare2`, `rizin`) alongside the adapter tools, so readiness covers the
+  control-flow axis (`verify --decompiler`, ADR-0017). Closed `B-051`.

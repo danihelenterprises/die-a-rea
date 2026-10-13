@@ -564,6 +564,33 @@ struct DoctorReport {
     checks: Vec<DoctorCheck>,
 }
 
+/// Optional external tools `doctor` reports on (readiness, never requirements).
+/// Includes the WASM toolchain (Binaryen/WABT) and common decompilers that can
+/// back `verify --decompiler` / the control-flow axis (ADR-0017, B-051).
+const OPTIONAL_TOOLS: &[&str] = &[
+    "sh",
+    "node",
+    "npm",
+    "javascript-obfuscator",
+    "go",
+    "garble",
+    "clang",
+    "dotnet",
+    "r8",
+    "proguard",
+    "nm",
+    "objdump",
+    "llvm-nm",
+    "wasm-opt",
+    "wasm-mutate",
+    "wasm2wat",
+    "wat2wasm",
+    "ghidra",
+    "analyzeHeadless",
+    "radare2",
+    "rizin",
+];
+
 fn cmd_doctor(ui: &Ui, manifest_path: &Path, json: bool) -> Result<()> {
     let mut checks = vec![DoctorCheck {
         name: "manifest".into(),
@@ -593,21 +620,7 @@ fn cmd_doctor(ui: &Ui, manifest_path: &Path, json: bool) -> Result<()> {
         });
     }
 
-    for tool in [
-        "sh",
-        "node",
-        "npm",
-        "javascript-obfuscator",
-        "go",
-        "garble",
-        "clang",
-        "dotnet",
-        "r8",
-        "proguard",
-        "nm",
-        "objdump",
-        "llvm-nm",
-    ] {
+    for tool in OPTIONAL_TOOLS {
         let ok = direa_core::which(tool).is_some();
         checks.push(DoctorCheck {
             name: format!("tool:{tool}"),

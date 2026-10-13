@@ -76,3 +76,46 @@ fn build_then_verify_improves_resistance() {
 
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn doctor_reports_wasm_and_decompiler_tools() {
+    // `doctor` must surface the WASM toolchain and common decompilers, not just
+    // the adapter tools (B-051).
+    let dir = std::env::temp_dir().join(format!("direa-doctor-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+
+    let out = Command::new(bin())
+        .current_dir(&dir)
+        .args(["doctor", "--json"])
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "doctor failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let report: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let names: Vec<&str> = report["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|c| c["name"].as_str())
+        .collect();
+    for want in [
+        "tool:wasm-opt",
+        "tool:wasm-mutate",
+        "tool:wasm2wat",
+        "tool:wat2wasm",
+        "tool:ghidra",
+        "tool:radare2",
+        "tool:rizin",
+    ] {
+        assert!(
+            names.contains(&want),
+            "doctor must report {want}; got {names:?}"
+        );
+    }
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
