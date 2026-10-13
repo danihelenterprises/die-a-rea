@@ -126,7 +126,7 @@ counted here (one fact, one home).
 |---|---|
 | Rust crates | 4 |
 | Tests (`cargo test --all`) | 120 |
-| Backlog items (`B-NNN`) | 58 |
+| Backlog items (`B-NNN`) | 59 |
 | Open backlog items (High) | 0 |
 | Durable lessons (`K-NNN`) | 57 |
 | Decision records (`ADR-NNNN`) | 21 |
