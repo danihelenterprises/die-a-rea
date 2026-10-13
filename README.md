@@ -85,6 +85,7 @@ no extra toolchain; **adapters** add deeper protection and are bring-your-own
 | Go | ELF, PE, Mach-O | symbol/debug strip + Go build-info/ID scrub | `direa-go` (garble) |
 | JavaScript | `.js` / `.mjs` / `.cjs`, bundles | source-map + comment strip, notice/canary, decoys, runtime guard | `direa-js` (javascript-obfuscator) |
 | Electron | app directory, `.asar` | app dir: as JS/tree; `.asar`: embedded JS hardened and repacked | `direa-js` (+ asarmor / bytenode) |
+| Tauri (v2) | app bundle (`src-tauri`) | backend binary discovered + `native-post` (the web frontend is embedded in it) | `direa-llvm` (Pluto / O-MVLL) |
 | .NET (C#/F#/VB) | PE assemblies (`.dll`/`.exe`) | COFF symbol table, debug dir, Rich header | `direa-clr` (ConfuserEx) |
 | Java / Kotlin / Scala | `.class`, `.jar` | `.class`: debug-attribute strip; `.jar`: unpack, strip each `.class`, repack | `direa-jvm` (R8 / ProGuard) |
 | Android | `.apk` | DEX debug-info strip (re-sign required) | `direa-jvm` (R8) |

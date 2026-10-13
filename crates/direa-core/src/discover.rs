@@ -206,6 +206,25 @@ pub fn discover(root: &Path) -> Vec<Discovered> {
         );
     }
 
+    // Tauri: the Rust backend lives in `src-tauri/`, so its binary is under
+    // `src-tauri/target/{release,debug}/<name>` (the frontend `dist/` is found
+    // below via `package.json`). Discovery-only support (B-059).
+    let tauri = root.join("src-tauri");
+    if tauri.join("tauri.conf.json").is_file() {
+        if let Some(name) = cargo_package_name(&tauri) {
+            push_if_file(
+                &mut out,
+                tauri.join("target/release").join(&name),
+                "Tauri src-tauri target/release",
+            );
+            push_if_file(
+                &mut out,
+                tauri.join("target/debug").join(&name),
+                "Tauri src-tauri target/debug",
+            );
+        }
+    }
+
     // Node / Electron: package.json main/bin, or dist/
     if let Ok(text) = std::fs::read_to_string(root.join("package.json")) {
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
@@ -426,6 +445,33 @@ mod tests {
         assert!(
             !found.iter().any(|d| d.path.ends_with("app.o")),
             "object files must be skipped: {found:?}"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn finds_tauri_backend_binary() {
+        let dir = temp_dir("tauri");
+        let tauri = dir.join("src-tauri");
+        std::fs::create_dir_all(tauri.join("target/release")).unwrap();
+        std::fs::write(
+            tauri.join("Cargo.toml"),
+            "[package]\nname = \"app\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+        std::fs::write(tauri.join("tauri.conf.json"), "{}").unwrap();
+        std::fs::write(
+            tauri.join("target/release/app"),
+            b"\x7fELF\x02\x01\x01\x00no go markers",
+        )
+        .unwrap();
+        let found = discover(&dir);
+        assert!(
+            found
+                .iter()
+                .any(|d| d.path.ends_with("src-tauri/target/release/app")
+                    && d.kind == TargetKind::NativeElf),
+            "Tauri project must discover the backend binary: {found:?}"
         );
         let _ = std::fs::remove_dir_all(&dir);
     }

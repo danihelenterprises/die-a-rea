@@ -544,3 +544,14 @@ which carry no debug data. [Evidence: `crates/direa-core/src/wasm.rs`
 container for metadata must not be counted as exposure by the probe that
 measures the same container; keep injected content in a reserved namespace the
 probe excludes. (B-046)
+
+**K-061 — Tauri v2 keeps the Rust crate under `src-tauri/`, so root-relative
+discovery misses its binary.** A Tauri app's root holds `package.json` and a Vite
+frontend, while the Rust backend is a separate crate at `src-tauri/Cargo.toml`
+with its own `target/{release,debug}/<name>`. `discover` read only the root
+`Cargo.toml`, so it surfaced neither the shipped binary nor (for a Tauri-only
+tree) anything at all; it now also reads `src-tauri` when
+`src-tauri/tauri.conf.json` is present. [Evidence:
+`crates/direa-core/src/discover.rs` (`discover`, test
+`finds_tauri_backend_binary`); B-059] -> Check a framework's conventional
+sub-crate layout, not just the project root. (B-059)

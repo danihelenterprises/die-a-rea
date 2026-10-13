@@ -128,10 +128,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 144 |
-| Backlog items (`B-NNN`) | 59 |
+| Tests (`cargo test --all`) | 145 |
+| Backlog items (`B-NNN`) | 60 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 60 |
+| Durable lessons (`K-NNN`) | 61 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -319,3 +319,8 @@ counted here (one fact, one home).
   notice + canary tokens as a `direa.notice` custom section (behaviour-safe,
   bounded), and the `debug-info` probe ignores `direa.*` sections so the axis
   still measures debug metadata. B-046 stays Open for Java/native/tarpit parity.
+- **B-059 (K-061):** re-scoped to discovery + docs: `discover` (used by `init`)
+  now finds a Tauri v2 app's backend binary at `src-tauri/target/{release,debug}/
+  <name>` when `src-tauri/tauri.conf.json` is present; README documents Tauri.
+  The adapter proper is opened as B-060 (blocked on a real `tauri build` sample).
+  Closed `B-059`; opened `B-060`.
