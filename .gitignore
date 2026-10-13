@@ -16,3 +16,7 @@ bench/android-apk/app.apk
 
 # The test bowl output (see eval/README.md).
 testbowl-out/
+
+# Core dumps (e.g. from a crashing toolchain in a container).
+core
+core.*
