@@ -242,11 +242,25 @@ pub fn build(
             }
             TargetKind::Wasm => {
                 actions.push("wasm-post: strip custom sections".into());
+                if policy.agent_stop_notice {
+                    actions.push("inject authorization notice".into());
+                }
+                if !canaries.is_empty() {
+                    actions.push(format!("embed {} canary token(s)", canaries.len()));
+                }
                 if !dry_run {
                     ensure_parent(&dest)?;
                     let mut data =
                         std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
                     let rep = direa_core::wasm::strip_custom_sections(&mut data);
+                    let payload = wasm_notice_payload(&policy, &notice, &canaries);
+                    if !payload.is_empty() {
+                        direa_core::wasm::inject_custom_section(
+                            &mut data,
+                            direa_core::wasm::NOTICE_SECTION,
+                            payload.as_bytes(),
+                        );
+                    }
                     std::fs::write(&dest, data)
                         .with_context(|| format!("writing {}", dest.display()))?;
                     result.notes.push(format!(
@@ -1118,6 +1132,28 @@ fn sanitize_comment(text: &str) -> String {
     text.replace("*/", "* /")
 }
 
+/// Upper bound on the WASM notice custom-section payload.
+const MAX_WASM_NOTICE_LEN: usize = 64 * 1024;
+
+/// Text embedded in the `direa.notice` WASM custom section: the honest
+/// authorization notice plus canary tokens, bounded. The section is
+/// non-semantic, so this is behaviour-safe (ADR-0006, B-046).
+fn wasm_notice_payload(policy: &ResolvedPolicy, notice: &str, canaries: &[String]) -> String {
+    let mut s = String::new();
+    if policy.agent_stop_notice {
+        s.push_str(notice);
+        s.push('\n');
+    }
+    for c in canaries {
+        s.push_str(c);
+        s.push('\n');
+    }
+    if s.len() > MAX_WASM_NOTICE_LEN {
+        s.truncate(MAX_WASM_NOTICE_LEN);
+    }
+    s
+}
+
 fn sanitize_string(text: &str) -> String {
     text.replace('\\', "\\\\").replace('"', "\\\"")
 }
@@ -1604,6 +1640,46 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
                 .unwrap()
                 .has_debug_info(),
             "DEX debug info must be stripped"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn wasm_notice_and_canary_are_embedded() {
+        let dir = std::env::temp_dir().join(format!("direa-wasm-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("mod.wasm");
+        let mut wasm = b"\0asm\x01\0\0\0".to_vec();
+        wasm.extend_from_slice(b"\x00\x08\x04nameabc"); // a debug custom section
+        std::fs::write(&src, &wasm).unwrap();
+
+        let mut manifest = Manifest {
+            targets: vec![direa_core::TargetSpec {
+                path: src.clone(),
+                kind: None,
+                adapters: vec![],
+            }],
+            ..Default::default()
+        };
+        manifest.agent_defense.canaries = vec!["lic-test".into()];
+        let out = dir.join("out");
+        let res = build(&manifest, &out, false, Some(1), false).unwrap();
+        assert!(res.targets[0].actions.iter().any(|a| a.contains("notice")));
+        let hardened = std::fs::read(out.join("mod.wasm")).unwrap();
+        let names = direa_core::wasm::custom_section_names(&hardened);
+        assert!(
+            names.iter().any(|n| n == direa_core::wasm::NOTICE_SECTION),
+            "notice section missing: {names:?}"
+        );
+        assert!(
+            !names.iter().any(|n| n == "name"),
+            "debug section must be gone: {names:?}"
+        );
+        let needle = b"DIREA-CANARY-lic-test";
+        assert!(
+            hardened.windows(needle.len()).any(|w| w == needle),
+            "canary must be embedded"
         );
         let _ = std::fs::remove_dir_all(&dir);
     }

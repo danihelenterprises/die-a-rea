@@ -88,7 +88,7 @@ no extra toolchain; **adapters** add deeper protection and are bring-your-own
 | .NET (C#/F#/VB) | PE assemblies (`.dll`/`.exe`) | COFF symbol table, debug dir, Rich header | `direa-clr` (ConfuserEx) |
 | Java / Kotlin / Scala | `.class`, `.jar` | `.class`: debug-attribute strip; `.jar`: unpack, strip each `.class`, repack | `direa-jvm` (R8 / ProGuard) |
 | Android | `.apk` | DEX debug-info strip (re-sign required) | `direa-jvm` (R8) |
-| WebAssembly | `.wasm` | custom-section strip (name, producers) | `direa-wasm` (wasm-opt / wasm-mutate) |
+| WebAssembly | `.wasm` | custom-section strip (name, producers) + notice/canary section | `direa-wasm` (wasm-opt / wasm-mutate) |
 | Any other | any file/dir | structural checks + RRS measurement | — (write one: [docs/ADAPTERS.md](docs/ADAPTERS.md)) |
 
 Other languages can call the tool two ways: the **CLI** (any build system), or the

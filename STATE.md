@@ -128,10 +128,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 139 |
+| Tests (`cargo test --all`) | 144 |
 | Backlog items (`B-NNN`) | 59 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 59 |
+| Durable lessons (`K-NNN`) | 60 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -315,3 +315,7 @@ counted here (one fact, one home).
 - **B-048:** the optional REA adversary (`verify --with-rea`) no longer gates
   on JS/asar; `probes::rea_target` hands any existing artifact to the configured
   `--rea` command (the default remains the JS provider). Closed `B-048`.
+- **B-046 (partial, K-060):** WASM targets now embed the honest authorization
+  notice + canary tokens as a `direa.notice` custom section (behaviour-safe,
+  bounded), and the `debug-info` probe ignores `direa.*` sections so the axis
+  still measures debug metadata. B-046 stays Open for Java/native/tarpit parity.

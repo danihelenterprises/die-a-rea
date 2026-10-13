@@ -98,7 +98,9 @@ see lesson K-012.
 The `debug-metadata-exposure` probe is format-aware: it also detects JVM
 debug-only attributes (`SourceFile`, `LineNumberTable`, ...) and WASM custom
 sections (the `name`/`producers` sections), so the built-in `java-post` and
-`wasm-post` transforms are measured rather than silently skipped (B-047). For a
+`wasm-post` transforms are measured rather than silently skipped (B-047). WASM
+sections that die-a-rea itself injects (`direa.*`, the agent notice/canaries) are
+ignored, since they are not debug metadata (B-046). For a
 `.jar` it reads the `.class` members inside the archive, since the raw archive is
 compressed (B-058, K-057). DEX debug info is pointer-based (no byte marker), so
 it is measured structurally for `.dex` and APK `classes*.dex` members (B-056,

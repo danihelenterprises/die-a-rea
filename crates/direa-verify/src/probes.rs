@@ -202,7 +202,13 @@ fn debug_metadata(bytes: &[u8]) -> Option<&'static str> {
     {
         return Some("DEX debug info (apk)");
     }
-    if bytes.starts_with(b"\0asm") && !direa_core::wasm::custom_section_names(bytes).is_empty() {
+    if bytes.starts_with(b"\0asm")
+        && direa_core::wasm::custom_section_names(bytes)
+            .iter()
+            .any(|n| !n.starts_with(direa_core::wasm::SECTION_PREFIX))
+    {
+        // die-a-rea's own injected sections (`direa.*`, the agent notice/canaries)
+        // are not debug metadata, so they are ignored here (B-046).
         return Some("WASM custom section");
     }
     None
@@ -573,6 +579,27 @@ mod tests {
             0.0,
             "wasm-post must make the debug axis measurable and clear"
         );
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_file(p2);
+    }
+
+    #[test]
+    fn wasm_agent_notice_is_not_measured_as_debug() {
+        // A real debug custom section is measured...
+        let mut data = b"\0asm\x01\0\0\0".to_vec();
+        data.extend_from_slice(b"\x00\x08\x04nameabc");
+        let p = temp_file("dbg-notice.wasm", &data);
+        assert_eq!(DebugInfoProbe.measure(&p).unwrap().raw, 1.0);
+        // ...but after wasm-post strips it and the notice is injected, the axis
+        // is clear (die-a-rea's own `direa.*` section is not debug metadata).
+        direa_core::wasm::strip_custom_sections(&mut data);
+        direa_core::wasm::inject_custom_section(
+            &mut data,
+            direa_core::wasm::NOTICE_SECTION,
+            b"protected",
+        );
+        let p2 = temp_file("dbg-notice2.wasm", &data);
+        assert_eq!(DebugInfoProbe.measure(&p2).unwrap().raw, 0.0);
         let _ = std::fs::remove_file(p);
         let _ = std::fs::remove_file(p2);
     }

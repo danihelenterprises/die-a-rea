@@ -527,3 +527,20 @@ this as a note rather than pretending otherwise. [Evidence:
 (`AndroidApk` arm re-sign note)] -> A container edit implies a re-sign step:
 recompute the cheap internal checksum exactly, and state the external signature
 cost instead of hiding it. (B-042)
+
+**K-060 — A WASM custom section is the safe home for agent notices; the debug
+probe must ignore die-a-rea's own.** WASM custom sections (id 0) are non-semantic
+and may appear after the last section, so appending `direa.notice` (authorization
+notice + canary tokens) is behaviour-safe and bounded, giving the honest
+agent-defense layer parity beyond JS. But the `debug-info` probe treats *any*
+custom section as recoverable debug metadata, so an injected notice would read as
+unhardened; the probe therefore ignores `direa.*` sections (`SECTION_PREFIX`),
+which carry no debug data. [Evidence: `crates/direa-core/src/wasm.rs`
+(`inject_custom_section`, `NOTICE_SECTION`, `SECTION_PREFIX`; tests
+`injects_a_custom_section`, `injection_preserves_existing_sections`);
+`crates/direa-verify/src/probes.rs` (`debug_metadata`, test
+`wasm_agent_notice_is_not_measured_as_debug`);
+`crates/direa-cli/src/build.rs` (`wasm_notice_payload`)] -> A behaviour-safe
+container for metadata must not be counted as exposure by the probe that
+measures the same container; keep injected content in a reserved namespace the
+probe excludes. (B-046)

@@ -7,6 +7,14 @@
 
 use crate::native_post::{NativeFormat, StripReport};
 
+/// Namespace prefix for custom sections die-a-rea injects. Such sections carry
+/// agent-defense content, not debug metadata, so the `debug-info` probe ignores
+/// them (see `direa_verify::probes`).
+pub const SECTION_PREFIX: &str = "direa.";
+
+/// Custom section carrying the honest authorization notice + canary tokens.
+pub const NOTICE_SECTION: &str = "direa.notice";
+
 /// Zero the contents of every WASM custom section.
 pub fn strip_custom_sections(data: &mut [u8]) -> StripReport {
     let mut report = StripReport {
@@ -81,6 +89,38 @@ pub fn custom_section_names(data: &[u8]) -> Vec<String> {
     names
 }
 
+/// Append a custom section (id 0) to a WASM module.
+///
+/// Custom sections are non-semantic and may appear after the last section, so
+/// appending is behaviour-safe. Returns `false` if `data` is not a WASM module.
+pub fn inject_custom_section(data: &mut Vec<u8>, name: &str, payload: &[u8]) -> bool {
+    if data.len() < 8 || &data[0..4] != b"\0asm" {
+        return false;
+    }
+    let mut content = Vec::with_capacity(name.len() + payload.len() + 8);
+    write_leb(&mut content, name.len() as u64);
+    content.extend_from_slice(name.as_bytes());
+    content.extend_from_slice(payload);
+    data.push(0); // custom-section id
+    write_leb(data, content.len() as u64);
+    data.extend_from_slice(&content);
+    true
+}
+
+fn write_leb(out: &mut Vec<u8>, mut value: u64) {
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if value != 0 {
+            byte |= 0x80;
+        }
+        out.push(byte);
+        if value == 0 {
+            return;
+        }
+    }
+}
+
 fn read_leb(data: &[u8], mut pos: usize) -> Option<(u64, usize)> {
     let start = pos;
     let mut result: u64 = 0;
@@ -147,5 +187,33 @@ mod tests {
         let r = strip_custom_sections(&mut d);
         assert!(!r.changed);
         assert_eq!(d, before);
+    }
+
+    #[test]
+    fn injects_a_custom_section() {
+        let mut d = b"\0asm\x01\0\0\0".to_vec();
+        assert!(inject_custom_section(
+            &mut d,
+            NOTICE_SECTION,
+            b"hello notice"
+        ));
+        assert_eq!(custom_section_names(&d), vec![NOTICE_SECTION.to_string()]);
+    }
+
+    #[test]
+    fn injection_preserves_existing_sections() {
+        let mut d = wasm_fixture(); // already has a "name" section
+        assert!(inject_custom_section(&mut d, NOTICE_SECTION, b"x"));
+        assert_eq!(
+            custom_section_names(&d),
+            vec!["name".to_string(), NOTICE_SECTION.to_string()]
+        );
+    }
+
+    #[test]
+    fn inject_on_non_wasm_is_false() {
+        let mut d = b"nope".to_vec();
+        assert!(!inject_custom_section(&mut d, NOTICE_SECTION, b"x"));
+        assert_eq!(d, b"nope");
     }
 }
