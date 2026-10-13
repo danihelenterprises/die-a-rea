@@ -12,10 +12,16 @@ use crate::manifest::Manifest;
 #[serde(rename_all = "kebab-case")]
 pub enum TargetKind {
     NativeElf,
+    // Explicit renames so the serde name (JSON + manifest `kind =`) matches
+    // `as_str()`; kebab-case would otherwise emit `native-mach-o`, `dot-net`
+    // and `java-script` (B-054).
+    #[serde(rename = "native-macho")]
     NativeMachO,
     NativePe,
     Go,
+    #[serde(rename = "dotnet")]
     DotNet,
+    #[serde(rename = "javascript")]
     JavaScript,
     ElectronAsar,
     Wasm,
@@ -414,6 +420,18 @@ mod tests {
         let prefix = &data[..data.len().min(4096)];
         assert_eq!(detect_kind(&path, prefix), TargetKind::DotNet);
         let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn serialized_kind_matches_as_str() {
+        for kind in TargetKind::ALL {
+            let json = serde_json::to_value(kind).unwrap();
+            assert_eq!(
+                json,
+                serde_json::Value::String(kind.as_str().to_string()),
+                "serde name for {kind:?} must match as_str()"
+            );
+        }
     }
 
     #[test]

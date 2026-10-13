@@ -85,6 +85,6 @@ command is run, so untrusted artifacts are never executed.
 - Auto-detection now classifies `fzf` (Go) and `Newtonsoft.Json` (.NET)
   correctly: markers beyond the 4 KiB sniff prefix are found by a bounded
   streaming scan (B-053, K-047).
-- `TargetKind` still serializes as `java-script`/`dot-net` in JSON and `kind =`
-  manifest overrides, while `plan` (human) prints `javascript`/`dotnet` (B-054).
+- `TargetKind` now serializes consistently (`native-macho`/`dotnet`/`javascript`)
+  in JSON, `kind =` overrides and the human `plan` output (B-054, K-048).
 - See `BACKLOG.md` (B-042…B-054) for the remaining capability gaps.

@@ -385,3 +385,13 @@ headers, not rely on the first 4 KiB. [Evidence:
 `detects_dotnet_marker_beyond_the_sniff_window`); found by the test bowl (B-052)]
 -> A sniff window is a heuristic; confirm real artifacts before trusting a
 detector's coverage. (B-053)
+
+**K-048 — A type's serde name and its `as_str()` must agree.** `TargetKind`
+derived `rename_all = "kebab-case"`, which turned `JavaScript`/`DotNet`/
+`NativeMachO` into `java-script`/`dot-net`/`native-mach-o`, while `as_str()`
+returned `javascript`/`dotnet`/`native-macho`. So `plan --json` and the manifest
+`kind =` disagreed with the human `plan` output (and with each other). [Evidence:
+`crates/direa-core/src/planner.rs` (explicit `#[serde(rename)]`; test
+`serialized_kind_matches_as_str`); found by the test bowl (B-052)] -> When a value
+is both displayed and serialized, pin the wire name explicitly and test that it
+equals the display name. (B-054)

@@ -121,10 +121,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 98 |
+| Tests (`cargo test --all`) | 99 |
 | Backlog items (`B-NNN`) | 54 |
 | Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 47 |
+| Durable lessons (`K-NNN`) | 48 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -248,3 +248,6 @@ counted here (one fact, one home).
 - **B-053 (K-047):** `detect_kind` streams the file for Go/.NET markers beyond the
   4 KiB sniff window; the test bowl now classifies fzf as `go` and
   Newtonsoft.Json as `dot-net` (was `native-elf`/`native-pe`). Closed `B-053`.
+- **B-054 (K-048):** explicit `TargetKind` serde renames so the JSON/manifest
+  name matches `as_str()` (`native-macho`/`dotnet`/`javascript`, was
+  `native-mach-o`/`dot-net`/`java-script`). Closed `B-054`.
