@@ -1,5 +1,6 @@
-# Bench fixture: an Android APK. There is no built-in APK/DEX hardening yet
-# (B-042); this case guards detection and that the build runs without error.
+# Bench fixture: an Android APK (zip) with a `classes.dex`. The built-in APK
+# lane strips DEX debug info and repacks (B-042); deeper obfuscation is the `jvm`
+# adapter's job.
 [project]
 name = "android-apk"
 version = "1.0.0"

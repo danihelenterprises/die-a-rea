@@ -294,11 +294,11 @@ pub fn build(
                     if rep.changed {
                         actions.push(format!(
                             "jar: rewrote {} of {} embedded .class file(s)",
-                            rep.classes_hardened, rep.classes_total
+                            rep.entries_hardened, rep.entries_total
                         ));
                         result.notes.push(format!(
                             "jar: hardened {} .class file(s), {} file(s) total",
-                            rep.classes_hardened, rep.files_total
+                            rep.entries_hardened, rep.files_total
                         ));
                     } else {
                         actions.push(
@@ -339,6 +339,42 @@ pub fn build(
                         0
                     };
                     injected.injected_bytes = injected.padding_bytes;
+                }
+            }
+            TargetKind::AndroidApk => {
+                // An APK is a zip of DEX (and resources). Built-in hardening
+                // nulls DEX debug pointers (`debug_info_off`/`source_file_idx`)
+                // and repacks (B-042); deeper obfuscation is the `jvm` adapter's
+                // job and resources are preserved as runtime-needed (K-023).
+                if dry_run {
+                    actions.push("apk: strip DEX debug info, repack".into());
+                } else {
+                    ensure_parent(&dest)?;
+                    let data =
+                        std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
+                    let (new_data, rep) = direa_core::jar::harden_entries(&data, "dex", &|bytes| {
+                        let mut v = bytes.to_vec();
+                        direa_core::dex::strip_debug_info(&mut v);
+                        v
+                    });
+                    std::fs::write(&dest, &new_data)
+                        .with_context(|| format!("writing {}", dest.display()))?;
+                    if rep.changed {
+                        actions.push(format!(
+                            "apk: rewrote {} of {} DEX file(s)",
+                            rep.entries_hardened, rep.entries_total
+                        ));
+                        result.notes.push(
+                            "apk: DEX edited, APK signature invalidated — re-sign before shipping"
+                                .into(),
+                        );
+                    } else {
+                        actions.push(
+                            "copy .apk verbatim (no parseable DEX; use the jvm adapter for R8)"
+                                .into(),
+                        );
+                    }
+                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
                 }
             }
             _ => {
@@ -589,6 +625,15 @@ fn post_build_check(
             "post_build_magic",
             format!(
                 "post-build check failed: {} no longer carries the source executable magic",
+                dest.display()
+            ),
+        ));
+    }
+    if kind == TargetKind::AndroidApk && !head(dest).is_some_and(|h| h.starts_with(b"PK")) {
+        return Err(refused(
+            "post_build_magic",
+            format!(
+                "post-build check failed: {} is no longer a zip (APK)",
                 dest.display()
             ),
         ));
@@ -1496,6 +1541,70 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
             "embedded class debug attribute must be stripped"
         );
         assert_ne!(hardened, jar, "archive must be rewritten");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A minimal DEX with one method carrying a debug_info_off.
+    fn dex_with_debug() -> Vec<u8> {
+        let mut d = vec![0u8; 192];
+        d[0..8].copy_from_slice(b"dex\n035\0");
+        let put =
+            |d: &mut [u8], off: usize, v: u32| d[off..off + 4].copy_from_slice(&v.to_le_bytes());
+        let len = d.len() as u32;
+        put(&mut d, 32, len); // file_size
+        put(&mut d, 36, 112); // header_size
+        put(&mut d, 96, 1); // class_defs_size
+        put(&mut d, 100, 112); // class_defs_off
+        put(&mut d, 112 + 16, 0xFFFF_FFFF); // source_file_idx = NO_INDEX
+        put(&mut d, 112 + 24, 144); // class_data_off
+        d[146] = 1; // direct_methods_size
+        d[148] = 0; // method_idx_diff
+        d[149] = 1; // access_flags
+        d[150] = 0xB0; // code_off = 176
+        d[151] = 0x01;
+        put(&mut d, 176 + 8, 1); // debug_info_off
+        d
+    }
+
+    #[test]
+    fn android_apk_dex_is_hardened_in_place() {
+        // An APK with a `classes.dex` that carries debug info must be unpacked,
+        // stripped and repacked (B-042), and must stay a valid zip.
+        let apk = stored_jar(b"classes.dex", &dex_with_debug());
+        let dir = std::env::temp_dir().join(format!("direa-apk-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("app.apk");
+        std::fs::write(&src, &apk).unwrap();
+
+        let manifest = Manifest {
+            targets: vec![direa_core::TargetSpec {
+                path: src.clone(),
+                kind: None,
+                adapters: vec![],
+            }],
+            ..Default::default()
+        };
+        let out = dir.join("out");
+        let res = build(&manifest, &out, false, Some(1), false).unwrap();
+        assert!(
+            res.targets[0]
+                .actions
+                .iter()
+                .any(|a| a.contains("apk: rewrote")),
+            "APK must take the DEX-rewrite path: {:?}",
+            res.targets[0].actions
+        );
+        let hardened = std::fs::read(out.join("app.apk")).unwrap();
+        assert!(hardened.starts_with(b"PK"), "hardened APK must stay a zip");
+        let dexes = direa_core::jar::entries_with_ext(&hardened, "dex");
+        assert_eq!(dexes.len(), 1);
+        assert!(
+            !direa_core::dex::measure_debug_info(&dexes[0])
+                .unwrap()
+                .has_debug_info(),
+            "DEX debug info must be stripped"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

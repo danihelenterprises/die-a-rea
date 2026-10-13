@@ -97,6 +97,9 @@ to bottom unless a dependency says otherwise.
   `java-post` on each `.class`, and repacks it; the `debug-info` axis is
   jar-aware, so the win is measured (B-058, K-057). An archive the rewriter
   cannot parse is copied and deferred to the `jvm` adapter.
+- `die-a-rea build` on an `.apk` strips DEX debug info in each `classes*.dex`
+  and repacks it (B-042, K-059); the `debug-info` axis measures it. The produced
+  APK is unsigned — its APK signature is invalidated and must be re-signed.
 - `die-a-rea verify --original A --hardened B` prints an RRS report; `--json`
   for CI; `--with-rea` runs the external adversary when available; `--with-runtime`
   adds the runtime-instrumentation axis (debugger/Frida/inspector detection). The
@@ -125,10 +128,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 132 |
+| Tests (`cargo test --all`) | 137 |
 | Backlog items (`B-NNN`) | 59 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 58 |
+| Durable lessons (`K-NNN`) | 59 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -303,3 +306,9 @@ counted here (one fact, one home).
   `source_file_idx`; the `debug-info` probe is DEX-aware for standalone `.dex`
   and APK `classes*.dex` members (`jar::entries_with_ext`). Measurement only;
   DEX stripping stays B-042. Closed `B-056`.
+- **B-042 (K-059):** the `AndroidApk` build arm strips DEX debug pointers
+  (`debug_info_off`/`source_file_idx`) in every `classes*.dex` via
+  `dex::strip_debug_info` + `jar::harden_entries`, repacks (recomputing the DEX
+  Adler-32 checksum), and notes that the APK signature is invalidated (re-sign).
+  Resources are preserved (K-023); deeper obfuscation stays with the `jvm`
+  adapter. Bench `android-apk` rose 0 → 21. Closed `B-042`.

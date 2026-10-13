@@ -1,12 +1,14 @@
-//! Minimal DEX (Dalvik executable) reader for measuring debug information.
+//! Minimal DEX (Dalvik executable) reader for measuring and stripping debug
+//! information.
 //!
 //! There is no stable byte marker for DEX debug info, so the probe must walk
 //! the structure: header → `class_def_item`s → `class_data_item` → each
 //! method's `code_item`, where `debug_info_off != 0` marks a method with a
 //! line-number/`LocalVariableTable` program. The class's `source_file_idx`
-//! (the `SourceFile` equivalent) is counted too. This is a *measurement* (and
-//! the foundation a future APK strip in B-042 builds on); it never mutates and
-//! bails on anything it does not understand. DEX is little-endian.
+//! (the `SourceFile` equivalent) is counted too. [`measure_debug_info`] only
+//! reads; [`strip_debug_info`] nulls those pointers in place and recomputes the
+//! Adler-32 header checksum. Both bail on anything they do not understand. DEX
+//! is little-endian.
 
 /// `NO_INDEX` sentinel for an absent `source_file_idx`.
 const NO_INDEX: u32 = 0xFFFF_FFFF;
@@ -28,6 +30,13 @@ impl DexReport {
     pub fn has_debug_info(&self) -> bool {
         self.methods_with_debug_info > 0 || self.classes_with_source_file > 0
     }
+}
+
+/// A scan result: the report plus the byte offsets to clear when stripping.
+struct Scan {
+    report: DexReport,
+    /// `(offset, value)` of each 4-byte pointer to overwrite.
+    clear: Vec<(usize, u32)>,
 }
 
 fn u32le(data: &[u8], off: usize) -> Option<u32> {
@@ -53,10 +62,10 @@ fn read_uleb(data: &[u8], pos: &mut usize) -> Option<u32> {
     }
 }
 
-/// Parse a DEX file and report its debug information.
+/// Walk a DEX file, recording debug pointers and offsets to clear.
 ///
 /// Returns `None` when `data` is not a DEX file or is truncated/malformed.
-pub fn measure_debug_info(data: &[u8]) -> Option<DexReport> {
+fn scan(data: &[u8]) -> Option<Scan> {
     if data.len() < 112 || &data[0..4] != b"dex\n" {
         return None;
     }
@@ -68,11 +77,13 @@ pub fn measure_debug_info(data: &[u8]) -> Option<DexReport> {
     }
 
     let mut report = DexReport::default();
+    let mut clear = Vec::new();
     for i in 0..class_defs_size {
         let cd = class_defs_off + i * 32;
         report.classes += 1;
         if u32le(data, cd + 16)? != NO_INDEX {
             report.classes_with_source_file += 1;
+            clear.push((cd + 16, NO_INDEX));
         }
         let class_data_off = u32le(data, cd + 24)? as usize;
         if class_data_off == 0 {
@@ -96,12 +107,56 @@ pub fn measure_debug_info(data: &[u8]) -> Option<DexReport> {
                     report.methods_with_code += 1;
                     if u32le(data, code_off + 8)? != 0 {
                         report.methods_with_debug_info += 1;
+                        clear.push((code_off + 8, 0));
                     }
                 }
             }
         }
     }
-    Some(report)
+    Some(Scan { report, clear })
+}
+
+/// Parse a DEX file and report its debug information.
+///
+/// Returns `None` when `data` is not a DEX file or is truncated/malformed.
+pub fn measure_debug_info(data: &[u8]) -> Option<DexReport> {
+    scan(data).map(|s| s.report)
+}
+
+/// Strip DEX debug metadata in place: null every method's `debug_info_off` and
+/// reset every class's `source_file_idx` to `NO_INDEX`, then recompute the DEX
+/// Adler-32 checksum. Returns `true` if anything changed.
+///
+/// Behavior-safe: ART treats absent debug info as optional. The DEX `signature`
+/// (SHA-1) is left as-is — ART does not verify it at runtime, and any APK edit
+/// already invalidates the APK signature, so the APK must be re-signed anyway.
+pub fn strip_debug_info(data: &mut [u8]) -> bool {
+    let Some(scan) = scan(data) else {
+        return false;
+    };
+    if scan.clear.is_empty() {
+        return false;
+    }
+    for (off, value) in &scan.clear {
+        if let Some(slot) = data.get_mut(*off..*off + 4) {
+            slot.copy_from_slice(&value.to_le_bytes());
+        }
+    }
+    let checksum = adler32(&data[12..]);
+    if let Some(slot) = data.get_mut(8..12) {
+        slot.copy_from_slice(&checksum.to_le_bytes());
+    }
+    true
+}
+
+/// Adler-32, as used by the DEX header checksum.
+fn adler32(data: &[u8]) -> u32 {
+    let (mut a, mut b) = (1u32, 0u32);
+    for &byte in data {
+        a = (a + byte as u32) % 65521;
+        b = (b + a) % 65521;
+    }
+    (b << 16) | a
 }
 
 #[cfg(test)]
@@ -194,5 +249,31 @@ mod tests {
         let mut d = dex_fixture(1, NO_INDEX);
         d.truncate(120); // header claims a class that is no longer there
         assert!(measure_debug_info(&d).is_none());
+    }
+
+    #[test]
+    fn strip_clears_pointers_and_recomputes_checksum() {
+        let mut d = dex_fixture(1, 0); // method debug + source file
+        assert!(measure_debug_info(&d).unwrap().has_debug_info());
+        assert!(strip_debug_info(&mut d));
+        let r = measure_debug_info(&d).unwrap();
+        assert!(!r.has_debug_info());
+        assert_eq!(r.methods_with_debug_info, 0);
+        assert_eq!(r.classes_with_source_file, 0);
+        // The header checksum now matches the body.
+        let expect = adler32(&d[12..]);
+        assert_eq!(u32le(&d, 8).unwrap(), expect);
+    }
+
+    #[test]
+    fn strip_is_a_noop_without_debug_info() {
+        let mut d = dex_fixture(0, NO_INDEX);
+        assert!(!strip_debug_info(&mut d));
+        assert!(!strip_debug_info(&mut b"not a dex".to_vec()));
+    }
+
+    #[test]
+    fn adler32_known_vector() {
+        assert_eq!(adler32(b"abc"), 0x024D_0127);
     }
 }

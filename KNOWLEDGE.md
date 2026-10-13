@@ -512,3 +512,18 @@ tests `dex_debug_info_is_measured`, `apk_dex_debug_info_is_measured`);
 `crates/direa-core/src/jar.rs` (`entries_with_ext`)] -> Pointer-based metadata
 needs a parser, not a marker scan; parsing is measurement, stripping is a later
 transform (B-042). (B-056)
+
+**K-059 — Editing a DEX requires recomputing its header checksum, and the APK
+must be re-signed.** A DEX header carries an Adler-32 `checksum` (offset 8, over
+everything after it) and a SHA-1 `signature` (offset 12). Nulling debug pointers
+changes the bytes, so `direa_core::dex::strip_debug_info` recomputes the
+Adler-32; ART does not verify either field at runtime, so the SHA-1 is left
+(recomputing it would need a hash implementation the core does not link). More
+importantly, any change inside an APK invalidates its APK signature (v1/v2/v3),
+so a hardened APK is not installable until it is re-signed — `build` reports
+this as a note rather than pretending otherwise. [Evidence:
+`crates/direa-core/src/dex.rs` (`strip_debug_info`; test
+`strip_clears_pointers_and_recomputes_checksum`); `crates/direa-cli/src/build.rs`
+(`AndroidApk` arm re-sign note)] -> A container edit implies a re-sign step:
+recompute the cheap internal checksum exactly, and state the external signature
+cost instead of hiding it. (B-042)

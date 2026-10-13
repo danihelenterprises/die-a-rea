@@ -102,4 +102,4 @@ sections (the `name`/`producers` sections), so the built-in `java-post` and
 `.jar` it reads the `.class` members inside the archive, since the raw archive is
 compressed (B-058, K-057). DEX debug info is pointer-based (no byte marker), so
 it is measured structurally for `.dex` and APK `classes*.dex` members (B-056,
-K-058); stripping DEX debug info is still open (B-042).
+K-058); the built-in APK lane strips those pointers (B-042, K-059).

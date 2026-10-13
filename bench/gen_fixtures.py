@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Materialize the synthetic native bench fixtures (PE, Mach-O, jar).
+"""Materialize the synthetic native bench fixtures (PE, Mach-O, jar, APK).
 
 These mirror the minimal fixtures used by `native_post`'s unit tests: a PE32+
 with a COFF symbol table, a debug directory and a `.pdb` path, and a thin 64-bit
 Mach-O with a `__DWARF` segment. They are synthetic so the bench stays
 toolchain-free; `bench/generate.sh` skips them when Python is unavailable. The
-`.jar` fixture is a real deflated zip with a `.class` carrying debug attributes,
-so the built-in unpack/harden/repack (B-058) is exercised.
+`.jar` fixture is a real deflated zip with a `.class` carrying debug attributes
+(B-058) and the APK is a zip whose `classes.dex` carries debug info (B-042).
 """
 
 import io
@@ -117,14 +117,47 @@ def jar_fixture() -> bytes:
     return out.getvalue()
 
 
+def dex_fixture() -> bytes:
+    """A minimal DEX with one method carrying a `debug_info_off` pointer."""
+    d = bytearray(192)
+    d[0:8] = b"dex\n035\0"
+
+    def put(off: int, v: int) -> None:
+        struct.pack_into("<I", d, off, v)
+
+    put(32, len(d))  # file_size
+    put(36, 112)  # header_size
+    put(96, 1)  # class_defs_size
+    put(100, 112)  # class_defs_off
+    put(112 + 16, 0xFFFFFFFF)  # source_file_idx = NO_INDEX
+    put(112 + 24, 144)  # class_data_off
+    d[146] = 1  # direct_methods_size
+    d[148] = 0  # method_idx_diff
+    d[149] = 1  # access_flags
+    d[150] = 0xB0  # code_off = 176 (uleb)
+    d[151] = 0x01
+    put(176 + 8, 1)  # debug_info_off
+    return bytes(d)
+
+
+def apk_fixture() -> bytes:
+    """A minimal APK (zip) whose `classes.dex` carries debug info."""
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("AndroidManifest.xml", b"<manifest/>")
+        z.writestr("classes.dex", dex_fixture())
+    return out.getvalue()
+
+
 def main() -> None:
-    for d in ("native-pe", "native-macho", "electron-asar", "java-jar"):
+    for d in ("native-pe", "native-macho", "electron-asar", "java-jar", "android-apk"):
         (ROOT / d).mkdir(exist_ok=True)
     (ROOT / "native-pe" / "app.exe").write_bytes(pe_fixture())
     (ROOT / "native-macho" / "app").write_bytes(macho_fixture())
     (ROOT / "electron-asar" / "app.asar").write_bytes(asar_fixture())
     (ROOT / "java-jar" / "app.jar").write_bytes(jar_fixture())
-    print("synthetic native/asar/jar fixtures ready (PE, Mach-O, asar, jar)")
+    (ROOT / "android-apk" / "app.apk").write_bytes(apk_fixture())
+    print("synthetic native/asar/jar/apk fixtures ready")
 
 
 if __name__ == "__main__":

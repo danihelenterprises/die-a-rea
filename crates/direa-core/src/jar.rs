@@ -25,10 +25,10 @@ const FLAG_DATA_DESCRIPTOR: u16 = 0x0008;
 #[derive(Debug, Default, Clone)]
 pub struct JarReport {
     pub changed: bool,
-    /// `.class` entries whose bytes the transform altered.
-    pub classes_hardened: usize,
-    /// `.class` entries found in the archive.
-    pub classes_total: usize,
+    /// Matching entries whose bytes the transform altered.
+    pub entries_hardened: usize,
+    /// Entries the transform inspected.
+    pub entries_total: usize,
     /// Files (of any type) that carry content in the archive.
     pub files_total: usize,
 }
@@ -300,15 +300,31 @@ fn central_to_out(e: &CentralEntry, data: Vec<u8>) -> OutEntry {
 /// On a malformed or unsupported archive the input is returned unchanged
 /// (`changed == false`) so a caller can fall back to copying.
 pub fn harden_archive(data: &[u8], transform: &dyn Fn(&[u8]) -> Vec<u8>) -> (Vec<u8>, JarReport) {
+    harden_entries(data, "class", transform)
+}
+
+/// Rewrite any ZIP container, applying `transform` to each entry whose name
+/// ends with `.{ext}` (case-insensitive), then repacking. Works for `.jar`
+/// (`class`) and `.apk` (`dex`). Same conservative fallbacks as
+/// [`harden_archive`].
+pub fn harden_entries(
+    data: &[u8],
+    ext: &str,
+    transform: &dyn Fn(&[u8]) -> Vec<u8>,
+) -> (Vec<u8>, JarReport) {
     let mut report = JarReport::default();
     let Some(entries) = read_central(data) else {
         return (data.to_vec(), report);
     };
+    let suffix = format!(".{}", ext.to_ascii_lowercase());
     let mut out_entries = Vec::with_capacity(entries.len());
     for e in &entries {
         report.files_total += 1;
-        if is_class(&e.name) {
-            report.classes_total += 1;
+        let matches = String::from_utf8_lossy(&e.name)
+            .to_ascii_lowercase()
+            .ends_with(&suffix);
+        if matches {
+            report.entries_total += 1;
             let Some(raw) = compressed(data, e) else {
                 return (data.to_vec(), JarReport::default());
             };
@@ -318,7 +334,7 @@ pub fn harden_archive(data: &[u8], transform: &dyn Fn(&[u8]) -> Vec<u8>) -> (Vec
             let hardened = transform(&plain);
             if hardened != plain {
                 report.changed = true;
-                report.classes_hardened += 1;
+                report.entries_hardened += 1;
             }
             let Some((payload, method, crc, comp_size)) = encode(&hardened, e.method == 0) else {
                 return (data.to_vec(), JarReport::default());
@@ -495,8 +511,8 @@ mod tests {
             v
         });
         assert!(rep.changed);
-        assert_eq!(rep.classes_total, 1);
-        assert_eq!(rep.classes_hardened, 1);
+        assert_eq!(rep.entries_total, 1);
+        assert_eq!(rep.entries_hardened, 1);
         assert_eq!(rep.files_total, 2);
 
         // The class is rewritten; the manifest and other bytes are preserved.
@@ -551,5 +567,23 @@ mod tests {
         assert_eq!(dexes.len(), 1);
         assert_eq!(dexes[0], b"dex\n035\0payload");
         assert!(entries_with_ext(&archive, "class").is_empty());
+    }
+
+    #[test]
+    fn harden_entries_matches_extension() {
+        let archive = build_zip(
+            &[("classes.dex", b"dex\n035\0AAAA"), ("other.txt", b"x")],
+            true,
+        );
+        let (new, rep) = harden_entries(&archive, "dex", &|b| {
+            let mut v = b.to_vec();
+            v.push(b'!');
+            v
+        });
+        assert!(rep.changed);
+        assert_eq!(rep.entries_total, 1);
+        assert_eq!(rep.entries_hardened, 1);
+        assert_eq!(read_named(&new, "classes.dex"), b"dex\n035\0AAAA!");
+        assert_eq!(read_named(&new, "other.txt"), b"x");
     }
 }
