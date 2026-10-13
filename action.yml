@@ -1,0 +1,33 @@
+name: die-a-rea
+description: Harden a build artifact against automated / LLM reverse engineering and score the result.
+author: die-a-rea contributors
+branding:
+  icon: shield
+  color: purple
+
+inputs:
+  args:
+    description: Arguments passed to the die-a-rea CLI (e.g. "build --out dist-hardened").
+    required: false
+    default: plan
+  manifest:
+    description: Path to the manifest.
+    required: false
+    default: die-a-rea.toml
+  working-directory:
+    description: Directory to run in (must contain the manifest and targets).
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: Swatinem/rust-cache@v2
+    - name: Install die-a-rea
+      shell: bash
+      run: cargo install --path "${{ github.action_path }}/crates/direa-cli" --locked
+    - name: Run die-a-rea
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: die-a-rea --manifest "${{ inputs.manifest }}" ${{ inputs.args }}

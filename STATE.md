@@ -123,7 +123,7 @@ to bottom unless a dependency says otherwise.
 | Durable lessons (`K-NNN`) | 36 |
 | Decision records (`ADR-NNNN`) | 18 |
 | Markdown docs (tracked) | 38 |
-| Commits in history | 34 |
+| Commits in history | 35 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -210,3 +210,4 @@ to bottom unless a dependency says otherwise.
 - **B-031 (commit 33):** `die-a-rea explain <id>` (K-035). Closed `B-031`.
 - **B-032 (commit 34):** WASM + Java `.class` built-in post (K-036); opened
   B-033..B-037. Closed `B-032`.
+- **B-033 (commit 35):** composite GitHub Action. Closed `B-033`.

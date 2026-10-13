@@ -117,6 +117,19 @@ The `runtime` image ships the CLI, Node and the JS adapter; the `dev` image adds
 the Rust toolchain for building/testing. The entrypoint fails fast with clear
 errors. See [`docker/README.md`](docker/README.md).
 
+### GitHub Action
+
+Add it to a workflow as a one-liner:
+
+```yaml
+- uses: danihelenterprises/die-a-rea@main
+  with:
+    args: build --out dist-hardened
+- uses: danihelenterprises/die-a-rea@main
+  with:
+    args: verify --original dist/app.js --hardened dist-hardened/dist/app.js --json
+```
+
 ## What measurement looks like
 
 ```text
