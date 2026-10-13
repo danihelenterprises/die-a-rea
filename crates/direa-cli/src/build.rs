@@ -457,7 +457,10 @@ fn apply_external_adapters(
             target: dest.to_path_buf(),
             kind,
             policy: policy.clone(),
-            options: serde_json::json!({}),
+            // `{artifact}` = the target (built artifact); `{out}` = where a
+            // post-processor should write. Both resolve to the hardened artifact
+            // so configured commands work in place (ADR-0009).
+            options: serde_json::json!({ "out": dest }),
         };
         match SubprocessAdapter::new(resolved).run(&request) {
             Ok(resp) => {

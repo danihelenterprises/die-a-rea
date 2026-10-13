@@ -1,0 +1,132 @@
+#!/usr/bin/env node
+/*
+ * direa-go — die-a-rea adapter for Go binaries.
+ *
+ * Deep Go obfuscation (identifier/package renaming, literal obfuscation) is a
+ * *compile-time* transform: it is done by rebuilding with `garble` instead of
+ * `go`. So, like the LLVM adapter, this does not rewrite a built binary; it runs
+ * an operator-supplied build command (`DIREA_GO_COMMAND`) when set and otherwise
+ * reports `unavailable`. Bring your own toolchain (ADR-0007/0009).
+ *
+ * Example:
+ *   export DIREA_GO_ADAPTER=/path/to/adapters/go/direa-go
+ *   export DIREA_GO_COMMAND="garble -literals -tiny build -o {artifact} ."
+ *
+ * The built-in `native-post` already strips Go build-info/ID; garble adds
+ * source-level renaming on top.
+ *
+ * Protocol: one JSON request on stdin, one JSON response on stdout (ADR-0002).
+ */
+'use strict';
+
+const fs = require('fs');
+const { execSync } = require('child_process');
+
+function readStdin() {
+  try {
+    return fs.readFileSync(0, 'utf8');
+  } catch (_) {
+    return '';
+  }
+}
+function emit(obj) {
+  process.stdout.write(JSON.stringify(obj));
+}
+
+/**
+ * Run a shell command, capturing stdout/stderr (never inheriting them, which
+ * would corrupt the JSON response on stdout). Returns {ok, output}.
+ */
+function run(cmd) {
+  try {
+    const out = execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
+    return { ok: true, output: (out || '').trim() };
+  } catch (e) {
+    const parts = [e.stderr, e.stdout, e.message].filter(Boolean).map((s) => String(s).trim());
+    return { ok: false, output: parts.join(' ').trim() };
+  }
+}
+
+function main() {
+  const adapter = 'go';
+  let req;
+  try {
+    req = JSON.parse(readStdin() || '{}');
+  } catch (e) {
+    emit({
+      adapter,
+      status: 'error',
+      findings: [{ severity: 'error', code: 'bad_request', message: String(e) }],
+      message: 'invalid JSON request',
+    });
+    return;
+  }
+
+  const op = req.op || 'plan';
+  const build = process.env.DIREA_GO_COMMAND;
+
+  if (op === 'capabilities' || op === 'verify') {
+    emit({
+      adapter,
+      status: build ? 'ok' : 'unavailable',
+      steps: [],
+      findings: [],
+      metrics: { engine: build ? 'configured-build' : 'none' },
+      message: build
+        ? 'ready (DIREA_GO_COMMAND set)'
+        : 'set DIREA_GO_COMMAND to a garble build command (e.g. garble -literals -tiny build -o {artifact} .)',
+    });
+    return;
+  }
+
+  if (!build) {
+    emit({
+      adapter,
+      status: 'unavailable',
+      steps: [],
+      findings: [],
+      metrics: {},
+      message: 'DIREA_GO_COMMAND not set; garble obfuscation is compile-time',
+    });
+    return;
+  }
+
+  const out = (req.options && req.options.out) || '';
+  const cmd = build
+    .replace(/\{artifact\}/g, req.target || '')
+    .replace(/\{out\}/g, out);
+
+  if (op === 'plan') {
+    emit({
+      adapter,
+      status: 'ok',
+      steps: [{ adapter, action: 'build', detail: cmd, external: true, destructive: true }],
+      findings: [],
+      metrics: {},
+      message: 'would run the configured garble build',
+    });
+    return;
+  }
+
+  const r = run(cmd);
+  if (r.ok) {
+    emit({
+      adapter,
+      status: 'ok',
+      steps: [{ adapter, action: 'build', detail: cmd, external: true, destructive: true }],
+      findings: [],
+      metrics: {},
+      message: 'ran the configured garble build',
+    });
+  } else {
+    emit({
+      adapter,
+      status: 'error',
+      steps: [],
+      findings: [{ severity: 'error', code: 'build_failed', message: r.output }],
+      message: `configured garble build failed: ${r.output}`,
+    });
+  }
+}
+
+main();

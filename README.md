@@ -325,7 +325,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - Planning with an adapter registry and missing-adapter reporting.
 - Safe hardening: source-map removal, comment stripping, notice/canary injection.
 - Built-in, toolchain-free post: `native-post` for ELF/PE/Mach-O (incl. Go build-info), `wasm-post` (custom sections) and `java-post` (debug attributes) (ADR-0008, K-019, K-036).
-- External adapters discovered via `DIREA_<ID>_ADAPTER` or `PATH`: `direa-js` (javascript-obfuscator), `direa-llvm` (Pluto/O-MVLL compile-time hook), plus `.NET`/JVM references; toolchains are bring-your-own (ADR-0009, K-027).
+- External adapters discovered via `DIREA_<ID>_ADAPTER` or `PATH`: `direa-js` (javascript-obfuscator), `direa-llvm` (Pluto/O-MVLL), `direa-clr` (.NET/ConfuserEx), `direa-jvm` (R8/ProGuard), `direa-go` (garble) and `direa-wasm` (wasm-opt/wasm-mutate); toolchains are bring-your-own (ADR-0009, K-027).
 - Runtime guard: `direa_core::guard` detects debuggers/Frida/inspectors; `verify --with-runtime` scores it, `build` embeds a behavior-safe JS guard when `anti_instrumentation` is set, and `runtime/guard/` is a linkable native C guard (ADR-0014, ADR-0018).
 - Agent-defense gauntlet: `die-a-rea canary-selftest [--detector CMD]` normalizes input (HTML entities, homoglyphs, invisible characters, whitespace), runs the prompt-injection detector (built-in and optional external) over an adversarial + red-team evasion corpus and our own payloads, and fails if any sample is missed (ADR-0006, ADR-0020).
 - Seeded randomization: decoy functions/strings/files, depth bombs, reproducible via `--seed`.
@@ -335,9 +335,9 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 
 **Roadmap**
 
-- External adapters: LLVM/Pluto, garble, javascript-obfuscator, ConfuserEx, R8.
-- A runtime guard library with anti-debug / anti-instrumentation.
+- Deeper built-in transforms: Electron `.asar` unpack/repack and Android DEX.
 - An optional benchmark lane that runs a real REA adversary inside the RRS gate.
+- More cross-ecosystem probes (e.g. DEX debug info).
 
 ---
 

@@ -1,0 +1,127 @@
+#!/usr/bin/env node
+/*
+ * direa-wasm — die-a-rea adapter for WebAssembly modules.
+ *
+ * Wraps an operator-supplied post-processor (Binaryen's `wasm-opt`/`wasm-mutate`,
+ * WABT) via `DIREA_WASM_COMMAND`, a shell command with `{artifact}` and `{out}`
+ * placeholders. Runs on the built `.wasm` after the built-in `wasm-post`
+ * (custom-section strip). Bring your own toolchain (ADR-0007/0009).
+ *
+ * Example:
+ *   export DIREA_WASM_ADAPTER=/path/to/adapters/wasm/direa-wasm
+ *   export DIREA_WASM_COMMAND="wasm-opt -Oz {artifact} -o {out}"
+ *   export DIREA_WASM_COMMAND="wasm-mutate {artifact} {out}"
+ *
+ * Protocol: one JSON request on stdin, one JSON response on stdout (ADR-0002).
+ */
+'use strict';
+
+const fs = require('fs');
+const { execSync } = require('child_process');
+
+function readStdin() {
+  try {
+    return fs.readFileSync(0, 'utf8');
+  } catch (_) {
+    return '';
+  }
+}
+function emit(obj) {
+  process.stdout.write(JSON.stringify(obj));
+}
+
+/**
+ * Run a shell command, capturing stdout/stderr (never inheriting them, which
+ * would corrupt the JSON response on stdout). Returns {ok, output}.
+ */
+function run(cmd) {
+  try {
+    const out = execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
+    return { ok: true, output: (out || '').trim() };
+  } catch (e) {
+    const parts = [e.stderr, e.stdout, e.message].filter(Boolean).map((s) => String(s).trim());
+    return { ok: false, output: parts.join(' ').trim() };
+  }
+}
+
+function main() {
+  const adapter = 'wasm';
+  let req;
+  try {
+    req = JSON.parse(readStdin() || '{}');
+  } catch (e) {
+    emit({
+      adapter,
+      status: 'error',
+      findings: [{ severity: 'error', code: 'bad_request', message: String(e) }],
+      message: 'invalid JSON request',
+    });
+    return;
+  }
+
+  const op = req.op || 'plan';
+  const build = process.env.DIREA_WASM_COMMAND;
+
+  if (op === 'capabilities' || op === 'verify') {
+    emit({
+      adapter,
+      status: build ? 'ok' : 'unavailable',
+      steps: [],
+      findings: [],
+      metrics: { engine: build ? 'configured-command' : 'none' },
+      message: build ? 'ready (DIREA_WASM_COMMAND set)' : 'set DIREA_WASM_COMMAND (wasm-opt/wasm-mutate)',
+    });
+    return;
+  }
+
+  if (!build) {
+    emit({
+      adapter,
+      status: 'unavailable',
+      steps: [],
+      findings: [],
+      metrics: {},
+      message: 'DIREA_WASM_COMMAND not set; WASM mutation is bring-your-own',
+    });
+    return;
+  }
+
+  const out = (req.options && req.options.out) || '';
+  const cmd = build
+    .replace(/\{artifact\}/g, req.target || '')
+    .replace(/\{out\}/g, out);
+
+  if (op === 'plan') {
+    emit({
+      adapter,
+      status: 'ok',
+      steps: [{ adapter, action: 'mutate', detail: cmd, external: true, destructive: true }],
+      findings: [],
+      metrics: {},
+      message: 'would run the configured WASM post-processor',
+    });
+    return;
+  }
+
+  const r = run(cmd);
+  if (r.ok) {
+    emit({
+      adapter,
+      status: 'ok',
+      steps: [{ adapter, action: 'mutate', detail: cmd, external: true, destructive: true }],
+      findings: [],
+      metrics: {},
+      message: 'ran the configured WASM post-processor',
+    });
+  } else {
+    emit({
+      adapter,
+      status: 'error',
+      steps: [],
+      findings: [{ severity: 'error', code: 'mutate_failed', message: r.output }],
+      message: `configured WASM post-processor failed: ${r.output}`,
+    });
+  }
+}
+
+main();

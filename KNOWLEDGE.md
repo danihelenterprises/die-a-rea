@@ -438,3 +438,22 @@ with "Couldn't find a valid ICU package installed on the system" (a hard
 observing the bench Go/.NET fixtures in a throwaway `ubuntu:24.04` +
 `dotnet-install.sh` container (B-050)] -> When containerizing .NET tooling, install
 ICU or set the invariant flag. (B-050)
+
+**K-053 — A subprocess adapter must capture the wrapped tool's stdout.**
+Adapters reply with JSON on stdout, so an adapter that runs its tool with
+`execSync(..., {stdio:'inherit'})` lets the tool's stdout land in the JSON stream
+(corrupting the response) and hides stderr when the tool fails. Run the tool with
+`stdio: ['ignore','pipe','pipe']` and fold its output into the response on error.
+[Evidence: `adapters/go/direa-go`, `adapters/wasm/direa-wasm` (`run`); the older
+`clr`/`jvm`/`llvm` scripts still inherit (B-057)] -> Never let a wrapped tool write
+to the adapter's stdout. (B-044, B-057)
+
+**K-054 — garble needs a Go toolchain it can patch; GOMODCACHE toolchains fail.**
+garble@v0.18 requires Go ≥ 1.27. With a system Go 1.22, `GOTOOLCHAIN=go1.27.2`
+downloads the toolchain into GOMODCACHE, and garble aborts: "overlay contains a
+replacement for .../golang.org/toolchain@...; files beneath GOMODCACHE must not
+be replaced." Install a real Go (GOROOT outside GOMODCACHE, e.g. the official
+tarball or `setup-go`) and garble applies its linker patches normally. [Evidence:
+container verification of `adapters/go/direa-go` (B-044)] -> For compile-time
+hooks, match the toolchain to the tool's requirement and install it as GOROOT.
+(B-044)

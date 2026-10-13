@@ -144,3 +144,43 @@ jobs:
           out="$(cd "$tmp" && DIREA_LLVM_ADAPTER="$GITHUB_WORKSPACE/adapters/llvm/direa-llvm" DIREA_LLVM_BUILD="clang --version" "$GITHUB_WORKSPACE/target/debug/die-a-rea" build --out dist)"
           echo "$out"
           echo "$out" | grep -q "llvm adapter: Ok"
+
+  adapter-go:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+      - name: Go adapter smoke
+        run: |
+          go install mvdan.cc/garble@latest
+          cargo build
+          tmp="$(mktemp -d)"
+          printf 'package main\n\nfunc main() { println("hi") }\n' > "$tmp/main.go"
+          (cd "$tmp" && go mod init ci >/dev/null 2>&1 && go build -o app .)
+          printf '[project]\nname="ci"\nversion="1.0.0"\n[policy]\nprofile="low"\n[[targets]]\npath="app"\n' > "$tmp/die-a-rea.toml"
+          out="$(cd "$tmp" && PATH="$PATH:$(go env GOPATH)/bin" DIREA_GO_ADAPTER="$GITHUB_WORKSPACE/adapters/go/direa-go" DIREA_GO_COMMAND="garble -literals -tiny build -o {artifact} ." "$GITHUB_WORKSPACE/target/debug/die-a-rea" build --out dist)"
+          echo "$out"
+          echo "$out" | grep -q "go adapter: Ok"
+
+  adapter-wasm:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Binaryen and WABT
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends binaryen wabt
+      - name: WASM adapter smoke
+        run: |
+          cargo build
+          tmp="$(mktemp -d)"
+          printf '(module (func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))\n' > "$tmp/app.wat"
+          wat2wasm "$tmp/app.wat" -o "$tmp/mod.wasm"
+          printf '[project]\nname="ci"\nversion="1.0.0"\n[policy]\nprofile="low"\n[[targets]]\npath="mod.wasm"\n' > "$tmp/die-a-rea.toml"
+          out="$(cd "$tmp" && DIREA_WASM_ADAPTER="$GITHUB_WORKSPACE/adapters/wasm/direa-wasm" DIREA_WASM_COMMAND="wasm-opt -Oz {artifact} -o {out}" "$GITHUB_WORKSPACE/target/debug/die-a-rea" build --out dist)"
+          echo "$out"
+          echo "$out" | grep -q "wasm adapter: Ok"

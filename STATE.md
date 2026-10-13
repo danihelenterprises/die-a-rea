@@ -122,9 +122,9 @@ counted here (one fact, one home).
 |---|---|
 | Rust crates | 4 |
 | Tests (`cargo test --all`) | 103 |
-| Backlog items (`B-NNN`) | 56 |
+| Backlog items (`B-NNN`) | 57 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 52 |
+| Durable lessons (`K-NNN`) | 54 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -264,3 +264,8 @@ counted here (one fact, one home).
   Electron `.asar`/Android APK. Go and .NET were observed in a throwaway
   Go/.NET Docker container (go 41, dotnet 24) and are now gated in
   `expected.json`; all 11 cases pass. Closed `B-050`.
+- **B-044 (K-053, K-054):** bundled the `direa-go` (garble) and `direa-wasm`
+  (wasm-opt/wasm-mutate) reference adapters, documented them, added optional CI
+  lanes, wired `options.out` so `{out}` resolves, and verified both end-to-end
+  in a container. Closed `B-044`; opened `B-057` (older adapters inherit tool
+  stdout).
