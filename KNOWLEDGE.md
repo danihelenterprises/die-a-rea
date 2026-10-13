@@ -130,6 +130,14 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-040 — `verify --format` supports SARIF and JUnit.** `direa_verify::report`
+renders the ResistanceReport as SARIF 2.1.0 (one result per axis, level from
+exposure) or JUnit XML (one test case per axis, failing when exposure > 0.5); the
+CLI writes the chosen format to stdout and `--out`. [Evidence:
+`crates/direa-verify/src/report.rs` (tests); `crates/direa-cli/src/main.rs`
+(`ReportFormat`)] -> Keep the human form as default; machine formats are additive.
+(Open)
+
 **K-039 — Guard detection is platform-specific.** Linux reads `TracerPid`/maps;
 Windows uses `IsDebuggerPresent`/`CheckRemoteDebuggerPresent`; macOS uses
 `sysctl(KERN_PROC_PID)` and `P_TRACED`. The C guard mirrors this with

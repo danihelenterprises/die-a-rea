@@ -45,6 +45,14 @@ enum ErrorFormat {
     Json,
 }
 
+#[derive(ValueEnum, Clone, Copy, Debug)]
+enum ReportFormat {
+    Human,
+    Json,
+    Sarif,
+    Junit,
+}
+
 #[derive(Subcommand, Debug)]
 enum Command {
     /// Create a starter die-a-rea.toml in the current directory.
@@ -141,6 +149,9 @@ enum Command {
         /// External decompiler command for the control-flow axis ({artifact} substituted).
         #[arg(long)]
         decompiler: Option<String>,
+        /// Report format for stdout (and --out).
+        #[arg(long, value_enum, default_value_t = ReportFormat::Human)]
+        format: ReportFormat,
         /// Write the JSON report to this path.
         #[arg(long)]
         out: Option<PathBuf>,
@@ -234,6 +245,7 @@ fn run(cli: Cli) -> Result<()> {
             build_meta,
             with_runtime,
             decompiler,
+            format,
             out,
             json,
         } => cmd_verify(
@@ -246,6 +258,7 @@ fn run(cli: Cli) -> Result<()> {
             build_meta,
             with_runtime,
             decompiler,
+            format,
             out,
             json,
         ),
@@ -659,6 +672,7 @@ fn cmd_verify(
     build_meta: Option<PathBuf>,
     with_runtime: bool,
     decompiler: Option<String>,
+    format: ReportFormat,
     out: Option<PathBuf>,
     json: bool,
 ) -> Result<()> {
@@ -685,39 +699,44 @@ fn cmd_verify(
     })?;
     let report = &run.report;
 
-    if json {
-        ui.out(serde_json::to_string_pretty(report)?);
-    } else {
-        ui.out(format!("target: {}", report.target));
-        ui.out(format!(
-            "RRS: {}/100 (grade {})",
-            report.rrs,
-            report.grade.as_str()
-        ));
-        for m in &report.measurements {
-            let delta = m.delta();
-            ui.out(format!(
-                "  {:<30} exposure {:.2} -> {:.2}  (delta {:+.2})",
-                m.axis.as_str(),
-                m.baseline,
-                m.hardened,
-                delta
-            ));
-        }
-        if !report.notes.is_empty() {
-            ui.out("\nnotes:");
-            for note in &report.notes {
-                ui.out(format!("  - {note}"));
-            }
-        }
-    }
+    let effective = if json { ReportFormat::Json } else { format };
+    let text = match effective {
+        ReportFormat::Human => human_report(report),
+        ReportFormat::Json => serde_json::to_string_pretty(report)?,
+        ReportFormat::Sarif => direa_verify::report::to_sarif(report),
+        ReportFormat::Junit => direa_verify::report::to_junit(report),
+    };
+    ui.out(&text);
 
     if let Some(path) = out {
-        std::fs::write(&path, serde_json::to_string_pretty(report)?)
-            .with_context(|| format!("writing {}", path.display()))?;
-        if !json {
-            ui.out(format!("\nwrote report to {}", path.display()));
-        }
+        std::fs::write(&path, &text).with_context(|| format!("writing {}", path.display()))?;
+        ui.info(1, format!("wrote report to {}", path.display()));
     }
     Ok(())
+}
+
+fn human_report(report: &direa_core::ResistanceReport) -> String {
+    let mut out = String::new();
+    out.push_str(&format!("target: {}\n", report.target));
+    out.push_str(&format!(
+        "RRS: {}/100 (grade {})\n",
+        report.rrs,
+        report.grade.as_str()
+    ));
+    for m in &report.measurements {
+        out.push_str(&format!(
+            "  {:<30} exposure {:.2} -> {:.2}  (delta {:+.2})\n",
+            m.axis.as_str(),
+            m.baseline,
+            m.hardened,
+            m.delta()
+        ));
+    }
+    if !report.notes.is_empty() {
+        out.push_str("\nnotes:\n");
+        for note in &report.notes {
+            out.push_str(&format!("  - {note}\n"));
+        }
+    }
+    out
 }

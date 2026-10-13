@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 90 |
+| Tests (`cargo test --all`) | 92 |
 | Backlog items (`B-NNN`) | 37 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 39 |
+| Durable lessons (`K-NNN`) | 40 |
 | Decision records (`ADR-NNNN`) | 18 |
 | Markdown docs (tracked) | 39 |
-| Commits in history | 38 |
+| Commits in history | 39 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -215,3 +215,4 @@ to bottom unless a dependency says otherwise.
 - **B-035 (commit 37):** crates metadata, release workflow, `direa-ffi` (K-038).
   Closed `B-035`.
 - **B-036 (commit 38):** cross-platform guard detection (K-039). Closed `B-036`.
+- **B-037 (commit 39):** SARIF + JUnit report formats (K-040). Closed `B-037`.
