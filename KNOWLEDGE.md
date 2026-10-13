@@ -363,3 +363,13 @@ single source. [Evidence: `tools/docs-check.sh` (`check_counter_values`);
 `STATE.md` counters; `docs/README.md` doc-sync checklist] -> Add a number only if
 a probe/derivation produces it (K-042 spirit); never hand-maintain what a command
 can compute. (ADR-0004)
+
+**K-046 — Network and execution belong to a harness, never the product.** The
+product is local-only and never executes a target (ADR-0001). The OSS eval
+harness may download pinned third-party artifacts and run third-party code, but
+only because it is opt-in, confined to `eval/`, absent from the default CI, and
+configures no `[verify]` command (so the artifacts are read, not run). [Evidence:
+`eval/entrypoint.sh` (no `[verify]` block), `eval/run.sh` (on-demand),
+`docs/adr/ADR-0021`; third-party inputs listed in `docs/PIGGYBACK.md`] -> Keep
+network/exec anywhere but the product boundary; a harness that blurs it
+reintroduces the exact risk ADR-0001 removed. (ADR-0001, ADR-0007, ADR-0021)

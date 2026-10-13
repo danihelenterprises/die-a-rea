@@ -5,3 +5,4 @@ target
 dist-hardened
 direa-report.json
 docker/*.md
+eval-out

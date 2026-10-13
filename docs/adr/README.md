@@ -36,5 +36,6 @@ file, id `ADR-NNNN`, never reused.
 | [ADR-0018](ADR-0018-native-guard-is-link-time.md) | The native guard is link-time, not post-build injection | Accepted |
 | [ADR-0019](ADR-0019-remove-agent-deception-axis.md) | Remove the unmeasured agent-deception axis | Accepted |
 | [ADR-0020](ADR-0020-canary-detector-normalizes-before-matching.md) | The canary detector normalizes before matching | Accepted |
+| [ADR-0021](ADR-0021-oss-eval-harness-uses-network.md) | The OSS eval harness may use network; the product stays local-only | Accepted |
 
 Template: [0000-template.md](0000-template.md).

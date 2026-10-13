@@ -122,11 +122,11 @@ counted here (one fact, one home).
 |---|---|
 | Rust crates | 4 |
 | Tests (`cargo test --all`) | 96 |
-| Backlog items (`B-NNN`) | 51 |
-| Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 45 |
-| Decision records (`ADR-NNNN`) | 20 |
-| Markdown docs (tracked) | 42 |
+| Backlog items (`B-NNN`) | 54 |
+| Open backlog items (High) | 2 |
+| Durable lessons (`K-NNN`) | 46 |
+| Decision records (`ADR-NNNN`) | 21 |
+| Markdown docs (tracked) | 44 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -237,3 +237,8 @@ counted here (one fact, one home).
 - **Counter hygiene (K-045):** `tools/docs-check.sh` check 6 re-derives every
   canonical STATE counter and fails on drift; the `Commits in history` row was
   removed because git owns it.
+- **B-052:** added the on-demand Docker OSS evaluation harness `eval/` (pinned
+  real-world artifacts across every ecosystem; logs + readable hardened output),
+  with ADR-0021 confining network to the harness and K-046. Closed `B-052`. The
+  first run surfaced `B-053` (Go/.NET misdetection past the 4 KiB sniff window;
+  High) and `B-054` (`java-script` kind naming).

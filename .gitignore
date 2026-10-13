@@ -7,3 +7,6 @@ direa-report.json
 bench/wasm-module/mod.wasm
 bench/java-class/App.class
 bench/native-elf/app
+
+# OSS evaluation harness output (see eval/README.md).
+eval-out/

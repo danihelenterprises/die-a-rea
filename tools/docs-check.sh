@@ -24,9 +24,11 @@ err() { printf 'FAIL: %s\n' "$*" >&2; fail=$((fail + 1)); }
 warn() { printf 'WARN: %s\n' "$*" >&2; }
 ok() { printf 'ok: %s\n' "$*"; }
 
-# All tracked markdown, excluding build artifacts and VCS.
+# All project markdown, excluding build artifacts, VCS and generated harness
+# output (eval-out/ holds downloaded third-party docs; see ADR-0021).
 all_md() {
-    find . -name '*.md' -not -path './target/*' -not -path './.git/*' |
+    find . -name '*.md' \
+        -not -path './target/*' -not -path './.git/*' -not -path './eval-out/*' |
         sed 's|^\./||' | sort
 }
 
@@ -85,6 +87,7 @@ check_ids() {
     local refs missing=0
     refs="$(grep -rhoE '\b(B-[0-9]{3}|K-[0-9]{3}|ADR-[0-9]{4})\b' \
         --include='*.md' --include='*.rs' --include='*.sh' --include='*.yml' \
+        --exclude-dir=target --exclude-dir=.git --exclude-dir=eval-out \
         . 2>/dev/null | sort -u)"
     while IFS= read -r id; do
         [ -z "$id" ] && continue
@@ -121,7 +124,9 @@ COUNTER_PATTERN='[0-9]+[[:space:]]+(tests|backlog items|lessons|ADRs|decision re
 
 # Print offending lines for a root, excluding the canonical table in STATE.md.
 count_counter_hits() {
-    grep -RInE "$COUNTER_PATTERN" --include='*.md' "$1" 2>/dev/null |
+    grep -RInE "$COUNTER_PATTERN" --include='*.md' \
+        --exclude-dir=eval-out --exclude-dir=target --exclude-dir=.git \
+        "$1" 2>/dev/null |
         grep -v '/STATE.md:' || true
 }
 

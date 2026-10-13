@@ -95,6 +95,25 @@ highest-value, lowest-effort adapter.
 | NPS AutoDAN corpus (arXiv 2605.30667) | prompt-injection payloads to harden against |
 | NPS detection model (arXiv 2605.30677) | regex + embedding classifier; the gauntlet our canaries must survive |
 
+## Evaluation test artifacts (inputs only)
+
+The [`eval/`](../eval/README.md) harness downloads pinned third-party artifacts to
+test `die-a-rea` on real code (B-052). They are **inputs only** — never linked,
+bundled or redistributed; they land in the gitignored `eval-out/`. GPL artifacts
+(e.g. the Termux APK) are read byte-for-byte and never executed (ADR-0021,
+ADR-0007).
+
+| Artifact | Project | License |
+|---|---|---|
+| jq 1.7.1 binary | [jqlang/jq](https://github.com/jqlang/jq) | MIT |
+| fd v10.2.0 binary | [sharkdp/fd](https://github.com/sharkdp/fd) | MIT OR Apache-2.0 |
+| fzf v0.55.0 binary | [junegunn/fzf](https://github.com/junegunn/fzf) | MIT |
+| axios v1.7.7 bundle | [axios/axios](https://github.com/axios/axios) | MIT |
+| Newtonsoft.Json 13.0.3 | [JamesNK/Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) | MIT |
+| Gson 2.11.0 `.class` | [google/gson](https://github.com/google/gson) | Apache-2.0 |
+| sql.js 1.10.3 `.wasm` | [sql-js/sql.js](https://github.com/sql-js/sql.js) | MIT |
+| Termux v0.118.1 APK | [termux/termux-app](https://github.com/termux/termux-app) | GPL-3.0-only |
+
 ## Naming note
 
 `Detect It Easy` (DIE) is a well-known packer/compiler detector. The pun in
