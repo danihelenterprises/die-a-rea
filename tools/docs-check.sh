@@ -6,7 +6,12 @@
 #   2. every internal link resolves to a file that exists
 #   3. every referenced id (B-NNN / K-NNN / ADR-NNNN) is defined
 #   4. every commit in the recent range carries a "Doc impact:" line
-#   5. (best-effort) counters are not restated outside STATE.md
+#   5. counters are not restated outside STATE.md
+#   6. the canonical counters in STATE.md match the repository
+#
+# Check 6 recomputes every derivable counter and fails on drift, so the table
+# cannot rot (K-045). The tests count needs cargo; when cargo is absent the check
+# is skipped with a warning (the CI "docs" job has no Rust toolchain).
 #
 # Env: STRICT_COUNTERS=1 makes check 5 fatal (default: warn).
 
@@ -132,6 +137,74 @@ check_counters() {
     fi
 }
 
+# ── Check 6: canonical counters match the repository ─────────────────────────
+# Read the first table row in STATE.md whose label matches exactly.
+state_value() {
+    grep -F "| $1 |" STATE.md | head -1 |
+        sed -E 's/.*\|[[:space:]]*([0-9]+)[[:space:]]*\|.*/\1/'
+}
+
+expect_counter() {
+    local label="$1" actual="$2"
+    local stated; stated="$(state_value "$label")"
+    if [ -z "$stated" ]; then
+        err "STATE.md counter missing: $label"
+    elif [ "$stated" != "$actual" ]; then
+        err "STATE.md counter stale: $label = $stated (repo says $actual)"
+    fi
+}
+
+# Backlog rows with Severity High and Status Open.
+open_high_count() {
+    awk -F'|' '
+        /^\| B-[0-9][0-9][0-9] / {
+            sev=$4; st=$6
+            gsub(/[[:space:]]/, "", sev); gsub(/[[:space:]]/, "", st)
+            if (sev=="High" && st=="Open") c++
+        }
+        END { print c+0 }
+    ' BACKLOG.md 2>/dev/null
+}
+
+# Markdown docs that are (or will be) tracked: in the index plus untracked,
+# non-ignored files. Falls back to the working tree outside a git checkout.
+markdown_count() {
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git ls-files --cached --others --exclude-standard '*.md' | wc -l
+    else
+        find . -name '*.md' -not -path './target/*' -not -path './.git/*' | wc -l
+    fi
+}
+
+check_counter_values() {
+    if [ ! -f STATE.md ]; then
+        warn "no STATE.md; skipping counter-value check"
+        return
+    fi
+    local before=$fail
+    expect_counter "Rust crates" "$(ls -d crates/*/ 2>/dev/null | wc -l | tr -d ' ')"
+    expect_counter "Backlog items (\`B-NNN\`)" \
+        "$(grep -oE '^\| B-[0-9]{3}' BACKLOG.md 2>/dev/null | sort -u | wc -l | tr -d ' ')"
+    expect_counter "Open backlog items (High)" "$(open_high_count)"
+    expect_counter "Durable lessons (\`K-NNN\`)" \
+        "$(grep -oE '^\*\*K-[0-9]{3}' KNOWLEDGE.md 2>/dev/null | sort -u | wc -l | tr -d ' ')"
+    expect_counter "Decision records (\`ADR-NNNN\`)" \
+        "$(ls docs/adr/ADR-[0-9][0-9][0-9][0-9]*.md 2>/dev/null | wc -l | tr -d ' ')"
+    expect_counter "Markdown docs (tracked)" "$(markdown_count | tr -d ' ')"
+    if command -v cargo >/dev/null 2>&1; then
+        local tests
+        tests="$(cargo test --all -- --list 2>/dev/null | grep -c ': test$')"
+        if [ "${tests:-0}" -gt 0 ] 2>/dev/null; then
+            expect_counter 'Tests (`cargo test --all`)' "$tests"
+        else
+            warn "cargo could not enumerate tests; skipping the tests counter"
+        fi
+    else
+        warn "cargo not found; skipping the tests counter"
+    fi
+    [ "$fail" -eq "$before" ] && ok "STATE.md counters match the repository"
+}
+
 # Prove the counter detector works: a clean tree passes, a planted duplicate is
 # caught. Runnable in CI and locally with `tools/docs-check.sh --self-test`.
 self_test() {
@@ -165,6 +238,7 @@ main() {
     check_ids
     check_commits
     check_counters
+    check_counter_values
     if [ "$fail" -ne 0 ]; then
         echo "docs-check: FAILED ($fail)"
         exit 1

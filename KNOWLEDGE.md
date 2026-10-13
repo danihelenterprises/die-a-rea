@@ -352,3 +352,14 @@ tests `detector_normalizes_common_evasions`,
 `evasion_corpus_defeats_naive_matching`); ADR-0020] -> Keep normalization pure and
 test both directions (evasions caught, benign text clean); treat it as a floor,
 never a guarantee. (ADR-0004, ADR-0020)
+
+**K-045 — Hand-maintained counters rot; derive or check them.** STATE.md carried
+crates `3` (really 4), tracked docs `40` (really 42) and tests `37` (really 96)
+alongside a `Commits in history` row that tracked a work-item index, not git, and
+silently diverged. `tools/docs-check.sh` check 6 now re-derives every counter
+(crates, backlog, lessons, ADRs, tracked docs; tests via `cargo test --all --
+--list`) and fails on drift, and the commit row was removed because git is its
+single source. [Evidence: `tools/docs-check.sh` (`check_counter_values`);
+`STATE.md` counters; `docs/README.md` doc-sync checklist] -> Add a number only if
+a probe/derivation produces it (K-042 spirit); never hand-maintain what a command
+can compute. (ADR-0004)

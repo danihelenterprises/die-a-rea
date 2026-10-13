@@ -114,16 +114,19 @@ to bottom unless a dependency says otherwise.
 
 ## Counters (canonical — the only place these numbers live)
 
+Derived and verified by `tools/docs-check.sh` (check 6); update a value in the
+same change that moves it. Git owns the commit history — it is deliberately not
+counted here (one fact, one home).
+
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
 | Tests (`cargo test --all`) | 96 |
 | Backlog items (`B-NNN`) | 51 |
 | Open backlog items (High) | 1 |
-| Durable lessons (`K-NNN`) | 44 |
+| Durable lessons (`K-NNN`) | 45 |
 | Decision records (`ADR-NNNN`) | 20 |
 | Markdown docs (tracked) | 42 |
-| Commits in history | 48 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -231,3 +234,6 @@ to bottom unless a dependency says otherwise.
 - **Gap review:** per-ecosystem capability audit opened `B-042`–`B-051`
   (Android/asar/Go/WASM/JVM/guard-parity probes/REA/init/bench/doctor gaps); no
   behaviour change.
+- **Counter hygiene (K-045):** `tools/docs-check.sh` check 6 re-derives every
+  canonical STATE counter and fails on drift; the `Commits in history` row was
+  removed because git owns it.

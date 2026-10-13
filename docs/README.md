@@ -74,6 +74,8 @@ Every change leaves every document true. Walk this list before committing:
 - [ ] Does it change **installation, the CLI, manifest options, adapters, or the
       setup workflow**? → update `README.md` *and* the vibe-coder prompt at its
       bottom (only when user-facing).
-- [ ] Did any number change? → update only the canonical table in `STATE.md`.
+- [ ] Did any number change? → update only the canonical table in `STATE.md`;
+      `tools/docs-check.sh` re-derives it and fails on drift. (Git owns the
+      commit count, so it is not in the table.)
 - [ ] Is there open work left? → a `B-NNN` row in `BACKLOG.md`.
 - [ ] Does every commit body end with `Doc impact: …`?
