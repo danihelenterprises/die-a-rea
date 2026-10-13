@@ -1,0 +1,17 @@
+# Bench fixture: an Android APK. There is no built-in APK/DEX hardening yet
+# (B-042); this case guards detection and that the build runs without error.
+[project]
+name = "android-apk"
+version = "1.0.0"
+
+[policy]
+profile = "high"
+
+[randomization]
+enabled = false
+
+[tarpit]
+enabled = false
+
+[[targets]]
+path = "app.apk"

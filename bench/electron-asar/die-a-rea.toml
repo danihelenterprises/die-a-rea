@@ -1,0 +1,18 @@
+# Bench fixture: an Electron .asar archive. Built-in asar transforms are not
+# implemented (B-055), so build copies it verbatim; this case guards that a
+# binary archive no longer fails the UTF-8 text path (B-043).
+[project]
+name = "electron-asar"
+version = "1.0.0"
+
+[policy]
+profile = "high"
+
+[randomization]
+enabled = false
+
+[tarpit]
+enabled = false
+
+[[targets]]
+path = "app.asar"

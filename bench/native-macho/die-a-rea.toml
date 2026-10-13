@@ -1,0 +1,17 @@
+# Bench fixture: a synthetic thin Mach-O with a __DWARF segment (see
+# bench/gen_fixtures.py). Exercises the native-post Mach-O DWARF strip.
+[project]
+name = "native-macho"
+version = "1.0.0"
+
+[policy]
+profile = "high"
+
+[randomization]
+enabled = false
+
+[tarpit]
+enabled = false
+
+[[targets]]
+path = "app"

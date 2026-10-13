@@ -124,7 +124,7 @@ counted here (one fact, one home).
 | Tests (`cargo test --all`) | 103 |
 | Backlog items (`B-NNN`) | 56 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 50 |
+| Durable lessons (`K-NNN`) | 51 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -258,3 +258,8 @@ counted here (one fact, one home).
 - **B-047 (K-050):** the `debug-info` probe is format-aware — native DWARF/PDB,
   JVM debug attributes and WASM custom sections — so `java-post`/`wasm-post`
   wins show up in RRS. Closed `B-047`; opened `B-056` for DEX debug measurement.
+  This lifted the bench `wasm-module`/`java-class` scores 50 → 61.
+- **B-050 (K-051):** the bench corpus now also covers PE/Mach-O (synthetic, via
+  `bench/gen_fixtures.py`), Go/.NET (real, toolchain-gated) and Electron
+  `.asar`/Android APK; `expected.json` gates the cases observed locally.
+  Closed `B-050`.

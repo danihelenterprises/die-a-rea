@@ -419,3 +419,13 @@ axis and lets those transforms be scored. [Evidence:
 `crates/direa-core/src/wasm.rs` (`custom_section_names`)] -> When a transform
 targets metadata, confirm a probe actually measures it for that format (K-042
 spirit); a skipped axis can hide a real win. (B-047)
+
+**K-051 — Bench fixtures match the toolchain reality.** Extending the RRS gate
+beyond ELF/JS/WASM/Java did not need cross-toolchains: PE and Mach-O are
+hand-built synthetic fixtures (mirroring `native_post`'s unit-test layouts),
+`.asar`/APK are minimal files detected by extension, and Go/.NET are built from
+their toolchains only when present (skipped otherwise, and gated in
+`expected.json` only where observable). [Evidence: `bench/gen_fixtures.py`,
+`bench/generate.sh`, `bench/*/die-a-rea.toml`, `bench/expected.json`] -> Synthetic
+for parse-only formats, real + guarded for toolchain formats; gate only what you
+can observe. (B-050)

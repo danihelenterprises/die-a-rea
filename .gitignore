@@ -7,6 +7,12 @@ direa-report.json
 bench/wasm-module/mod.wasm
 bench/java-class/App.class
 bench/native-elf/app
+bench/native-pe/app.exe
+bench/native-macho/app
+bench/go/app
+bench/dotnet/App.dll
+bench/electron-asar/app.asar
+bench/android-apk/app.apk
 
 # The test bowl output (see eval/README.md).
 testbowl-out/

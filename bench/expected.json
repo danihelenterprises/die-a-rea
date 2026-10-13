@@ -1,7 +1,11 @@
 {
   "js-secrets": 40,
   "js-tree": 30,
-  "wasm-module": 45,
-  "java-class": 45,
-  "native-elf": 40
+  "wasm-module": 55,
+  "java-class": 55,
+  "native-elf": 40,
+  "native-pe": 55,
+  "native-macho": 55,
+  "electron-asar": 0,
+  "android-apk": 0
 }

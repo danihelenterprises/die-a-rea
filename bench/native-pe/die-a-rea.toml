@@ -1,0 +1,17 @@
+# Bench fixture: a synthetic PE with a COFF symbol table, a debug directory and
+# a `.pdb` path (see bench/gen_fixtures.py). Exercises the native-post PE strip.
+[project]
+name = "native-pe"
+version = "1.0.0"
+
+[policy]
+profile = "high"
+
+[randomization]
+enabled = false
+
+[tarpit]
+enabled = false
+
+[[targets]]
+path = "app.exe"
