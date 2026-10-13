@@ -70,3 +70,5 @@ with a real toolchain command. See `.github/workflows/ci.yml`.
 3. Register it in `crates/direa-core/src/planner.rs` (`default_registry`) if it
    targets a new kind.
 4. Never link copyleft/proprietary code — run it as a subprocess (ADR-0007).
+5. Capture the wrapped tool's stdout/stderr; never let its output reach the
+   adapter's stdout, or it corrupts the JSON response (K-053, B-057).

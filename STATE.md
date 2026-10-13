@@ -125,7 +125,7 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 116 |
+| Tests (`cargo test --all`) | 119 |
 | Backlog items (`B-NNN`) | 58 |
 | Open backlog items (High) | 0 |
 | Durable lessons (`K-NNN`) | 57 |
@@ -286,3 +286,7 @@ counted here (one fact, one home).
   arm falls back to a verbatim copy for archives it cannot rewrite (ZIP64,
   encryption, exotic methods). The `debug-info` probe is jar-aware and bench
   `java-jar` was added. Closed `B-058`.
+- **B-057 (K-053):** the `clr`/`jvm`/`llvm` adapters now capture the wrapped
+  tool's stdout/stderr (like `go`/`wasm`) instead of inheriting them, so tool
+  output no longer corrupts the JSON response and failures surface it;
+  `crates/direa-cli/tests/adapters.rs` guards the behavior. Closed `B-057`.

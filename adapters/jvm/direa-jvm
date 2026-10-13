@@ -29,6 +29,20 @@ function emit(obj) {
   process.stdout.write(JSON.stringify(obj));
 }
 
+/**
+ * Run a shell command, capturing stdout/stderr (never inheriting them, which
+ * would corrupt the JSON response on stdout). Returns {ok, output}.
+ */
+function run(cmd) {
+  try {
+    const out = execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
+    return { ok: true, output: (out || '').trim() };
+  } catch (e) {
+    const parts = [e.stderr, e.stdout, e.message].filter(Boolean).map((s) => String(s).trim());
+    return { ok: false, output: parts.join(' ').trim() };
+  }
+}
+
 function main() {
   const adapter = 'jvm';
   let req;
@@ -88,8 +102,8 @@ function main() {
     return;
   }
 
-  try {
-    execSync(cmd, { stdio: 'inherit' });
+  const r = run(cmd);
+  if (r.ok) {
     emit({
       adapter,
       status: 'ok',
@@ -98,13 +112,13 @@ function main() {
       metrics: {},
       message: 'ran the configured JVM/Android protector',
     });
-  } catch (e) {
+  } else {
     emit({
       adapter,
       status: 'error',
       steps: [],
-      findings: [{ severity: 'error', code: 'protect_failed', message: String(e.message || e) }],
-      message: 'configured JVM/Android protector failed',
+      findings: [{ severity: 'error', code: 'protect_failed', message: r.output }],
+      message: `configured JVM/Android protector failed: ${r.output}`,
     });
   }
 }
