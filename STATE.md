@@ -121,10 +121,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 103 |
-| Backlog items (`B-NNN`) | 57 |
+| Tests (`cargo test --all`) | 106 |
+| Backlog items (`B-NNN`) | 58 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 54 |
+| Durable lessons (`K-NNN`) | 55 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -269,3 +269,7 @@ counted here (one fact, one home).
   lanes, wired `options.out` so `{out}` resolves, and verified both end-to-end
   in a container. Closed `B-044`; opened `B-057` (older adapters inherit tool
   stdout).
+- **B-045 (K-055):** added `TargetKind::JavaJar` (detected by `.jar`) and
+  registered the `jvm` adapter for `JavaClass`/`JavaJar`/`AndroidApk`, so Java
+  `.class` and `.jar` targets now reach an external lane. Closed `B-045`; opened
+  `B-058` (built-in jar repack).

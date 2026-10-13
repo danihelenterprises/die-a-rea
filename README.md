@@ -89,7 +89,7 @@ no extra toolchain; **adapters** add deeper protection and are bring-your-own
 | JavaScript | `.js` / `.mjs` / `.cjs`, bundles | source-map + comment strip, notice/canary, decoys, runtime guard | `direa-js` (javascript-obfuscator) |
 | Electron | app directory, `.asar` | app dir: as JS/tree; `.asar`: copied verbatim (needs an adapter) | `direa-js` (+ asarmor / bytenode) |
 | .NET (C#/F#/VB) | PE assemblies (`.dll`/`.exe`) | COFF symbol table, debug dir, Rich header | `direa-clr` (ConfuserEx) |
-| Java / Kotlin / Scala | `.class` | debug-attribute strip (SourceFile, LineNumberTable, …) | `direa-jvm` (R8 / ProGuard) |
+| Java / Kotlin / Scala | `.class`, `.jar` | `.class`: debug-attribute strip; `.jar`: copied (needs an adapter) | `direa-jvm` (R8 / ProGuard) |
 | Android | `.apk` | detection + verification | `direa-jvm` (R8) |
 | WebAssembly | `.wasm` | custom-section strip (name, producers) | `direa-wasm` (wasm-opt / wasm-mutate) |
 | Any other | any file/dir | structural checks + RRS measurement | — (write one: [docs/ADAPTERS.md](docs/ADAPTERS.md)) |

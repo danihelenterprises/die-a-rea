@@ -26,6 +26,7 @@ pub enum TargetKind {
     ElectronAsar,
     Wasm,
     JavaClass,
+    JavaJar,
     AndroidApk,
     Unknown,
 }
@@ -42,6 +43,7 @@ impl TargetKind {
             TargetKind::ElectronAsar => "electron-asar",
             TargetKind::Wasm => "wasm",
             TargetKind::JavaClass => "java-class",
+            TargetKind::JavaJar => "java-jar",
             TargetKind::AndroidApk => "android-apk",
             TargetKind::Unknown => "unknown",
         }
@@ -82,6 +84,9 @@ pub fn detect_kind(path: &Path, bytes: &[u8]) -> TargetKind {
     }
     if ext == "class" {
         return TargetKind::JavaClass;
+    }
+    if ext == "jar" {
+        return TargetKind::JavaJar;
     }
 
     if bytes.starts_with(b"\x7fELF") {
@@ -252,14 +257,22 @@ pub fn default_registry() -> Vec<AdapterEntry> {
         ),
         external("clr", "direa-clr", vec![TargetKind::DotNet]),
         external("wasm", "direa-wasm", vec![TargetKind::Wasm]),
-        external("jvm", "direa-jvm", vec![TargetKind::AndroidApk]),
+        external(
+            "jvm",
+            "direa-jvm",
+            vec![
+                TargetKind::AndroidApk,
+                TargetKind::JavaClass,
+                TargetKind::JavaJar,
+            ],
+        ),
         external("llvm", "direa-llvm", native_kinds.clone()),
         external("go", "direa-go", vec![TargetKind::Go]),
     ]
 }
 
 impl TargetKind {
-    pub const ALL: [TargetKind; 11] = [
+    pub const ALL: [TargetKind; 12] = [
         TargetKind::NativeElf,
         TargetKind::NativeMachO,
         TargetKind::NativePe,
@@ -269,6 +282,7 @@ impl TargetKind {
         TargetKind::ElectronAsar,
         TargetKind::Wasm,
         TargetKind::JavaClass,
+        TargetKind::JavaJar,
         TargetKind::AndroidApk,
         TargetKind::Unknown,
     ];
@@ -430,6 +444,40 @@ mod tests {
                 json,
                 serde_json::Value::String(kind.as_str().to_string()),
                 "serde name for {kind:?} must match as_str()"
+            );
+        }
+    }
+
+    #[test]
+    fn detects_java_archives() {
+        assert_eq!(
+            detect_kind(Path::new("App.class"), b"\xca\xfe\xba\xbe\x00\x00\x00\x34"),
+            TargetKind::JavaClass
+        );
+        assert_eq!(
+            detect_kind(Path::new("app.jar"), b"PK\x03\x04rest"),
+            TargetKind::JavaJar
+        );
+    }
+
+    #[test]
+    fn plan_selects_jvm_for_java_targets() {
+        for (path, kind) in [
+            ("App.class", TargetKind::JavaClass),
+            ("app.jar", TargetKind::JavaJar),
+        ] {
+            let m = Manifest {
+                targets: vec![crate::manifest::TargetSpec {
+                    path: std::path::PathBuf::from(path),
+                    kind: Some(kind),
+                    adapters: vec![],
+                }],
+                ..Default::default()
+            };
+            let plans = plan_manifest(&m, &default_registry());
+            assert!(
+                plans[0].adapters.contains(&"jvm".to_string()),
+                "{path} must select the jvm adapter"
             );
         }
     }

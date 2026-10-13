@@ -457,3 +457,14 @@ tarball or `setup-go`) and garble applies its linker patches normally. [Evidence
 container verification of `adapters/go/direa-go` (B-044)] -> For compile-time
 hooks, match the toolchain to the tool's requirement and install it as GOROOT.
 (B-044)
+
+**K-055 — An artifact family a supported adapter targets needs its own kind.**
+A `.jar` was detected as `Unknown` (no case keyed on the extension), so it fell
+through the native `_` fallback and the `jvm` adapter — registered only for
+`AndroidApk` — was never selected. Adding `TargetKind::JavaJar` and registering
+`jvm` for `JavaClass`/`JavaJar`/`AndroidApk` gives Java archives a real lane.
+[Evidence: `crates/direa-core/src/planner.rs` (`JavaJar`, `detect_kind`,
+`default_registry`; tests `detects_java_archives`,
+`plan_selects_jvm_for_java_targets`); `crates/direa-cli/src/build.rs` (`JavaJar`
+arm)] -> When an adapter or probe targets a family, ensure detection produces a
+kind that selects it, or it silently degrades to the fallback. (B-045)

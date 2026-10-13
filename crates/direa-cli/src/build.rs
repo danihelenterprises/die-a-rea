@@ -253,6 +253,22 @@ pub fn build(
                     apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
                 }
             }
+            TargetKind::JavaJar => {
+                // A `.jar` is a zip container; the built-in `java-post` works on
+                // `.class` files, not archives. Copy it verbatim and defer to an
+                // external shrinker (the `jvm` adapter: R8/ProGuard). Built-in
+                // jar unpack/harden/repack is not implemented.
+                actions.push(
+                    "copy .jar archive verbatim (use the jvm adapter for R8/ProGuard)".into(),
+                );
+                if !dry_run {
+                    ensure_parent(&dest)?;
+                    std::fs::copy(src, &dest).with_context(|| {
+                        format!("copying {} to {}", src.display(), dest.display())
+                    })?;
+                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
+                }
+            }
             TargetKind::NativeElf
             | TargetKind::NativeMachO
             | TargetKind::NativePe
@@ -1237,6 +1253,32 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
             "the .asar branch must handle the archive"
         );
         assert!(out.join("app.asar").exists(), "archive must be written");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn jar_is_copied_and_defers_to_adapter() {
+        // A `.jar` must be detected (not Unknown) and copied for the jvm adapter.
+        let dir = std::env::temp_dir().join(format!("direa-jar-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("app.jar");
+        std::fs::write(&src, b"PK\x03\x04 not a real jar").unwrap();
+
+        let manifest = Manifest {
+            targets: vec![direa_core::TargetSpec {
+                path: src.clone(),
+                kind: None,
+                adapters: vec![],
+            }],
+            ..Default::default()
+        };
+        let out = dir.join("out");
+        let res = build(&manifest, &out, false, Some(1), false).unwrap();
+        assert_eq!(res.targets.len(), 1);
+        assert_eq!(res.targets[0].kind, "java-jar");
+        assert!(res.targets[0].actions.iter().any(|a| a.contains("jar")));
+        assert!(out.join("app.jar").exists());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
