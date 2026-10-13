@@ -128,8 +128,8 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 149 |
-| Backlog items (`B-NNN`) | 60 |
+| Tests (`cargo test --all`) | 152 |
+| Backlog items (`B-NNN`) | 61 |
 | Open backlog items (High) | 0 |
 | Durable lessons (`K-NNN`) | 62 |
 | Decision records (`ADR-NNNN`) | 21 |
@@ -330,3 +330,8 @@ counted here (one fact, one home).
   ignores `direa.*` sections; jar/APK probes read only `.class`/`.dex`. Native
   embedded guard stays link-time by design (ADR-0018); a standalone `.class` has
   no non-semantic carrier. Closed `B-046`.
+- **B-061:** added `crates/direa-core/tests/robustness.rs`: every binary parser
+  (`jar`/`dex`/`wasm`/`asar`/`native_post`/`java`) is fed truncations,
+  single-byte corruptions and 4000 seeded random inputs, asserting no panic and
+  the conservative fallback contract (unchanged buffer when `changed` is false)
+  (K-011). Closed `B-061`.
