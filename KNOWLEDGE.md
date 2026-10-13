@@ -468,3 +468,17 @@ through the native `_` fallback and the `jvm` adapter — registered only for
 `plan_selects_jvm_for_java_targets`); `crates/direa-cli/src/build.rs` (`JavaJar`
 arm)] -> When an adapter or probe targets a family, ensure detection produces a
 kind that selects it, or it silently degrades to the fallback. (B-045)
+
+**K-056 — Rewriting an asar is structural, not appended.** An asar archive is
+`[u32 4][u32 headerSize][headerPickle][data]`, where the header pickle is
+`[u32 payloadLen][u32 jsonLen][json][padding]` and the JSON maps a virtual tree
+to `{size, offset}` entries into the data region. Hardening embedded JS changes
+file sizes, so the header and every subsequent offset must be recomputed and
+stale per-file `integrity` hashes dropped; appending to the archive (as with
+native tarpits) would corrupt it. A malformed archive must fall back to a
+verbatim copy, never error (B-043). [Evidence:
+`crates/direa-core/src/asar.rs` (`harden_archive`, `read_header`, `frame`);
+tests `hardens_embedded_js_and_repacks`, `drops_integrity_field`;
+`crates/direa-cli/src/build.rs` `ElectronAsar` arm, verified with a real
+`asar extract`] -> Container formats need a reader/writer, not an append. (B-043,
+B-055)

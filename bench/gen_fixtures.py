@@ -7,6 +7,7 @@ Mach-O with a `__DWARF` segment. They are synthetic so the bench stays
 toolchain-free; `bench/generate.sh` skips them when Python is unavailable.
 """
 
+import json
 import struct
 from pathlib import Path
 
@@ -75,12 +76,38 @@ def macho_fixture() -> bytes:
     return bytes(d)
 
 
+def asar_fixture() -> bytes:
+    """A minimal valid asar archive with one JS file (no integrity field)."""
+    files = {
+        "index.js": b"var x=1;\n//# sourceMappingURL=index.js.map\nfunction s(a){return a*42+7;}\n",
+        "package.json": b'{"name":"bench","version":"1.0.0","main":"index.js"}',
+    }
+    data = bytearray()
+    entries = {}
+    for name, content in files.items():
+        offset = len(data)
+        data += content
+        entries[name] = {"size": len(content), "offset": str(offset)}
+    json_bytes = json.dumps({"files": entries}, separators=(",", ":")).encode()
+    pad = (4 - len(json_bytes) % 4) % 4
+    payload_len = 4 + len(json_bytes) + pad
+    header_buf_len = 4 + payload_len
+    out = bytearray()
+    out += struct.pack("<I", 4)
+    out += struct.pack("<I", header_buf_len)
+    out += struct.pack("<I", payload_len)
+    out += struct.pack("<I", len(json_bytes))
+    out += json_bytes + b"\0" * pad + bytes(data)
+    return bytes(out)
+
+
 def main() -> None:
-    (ROOT / "native-pe").mkdir(exist_ok=True)
-    (ROOT / "native-macho").mkdir(exist_ok=True)
+    for d in ("native-pe", "native-macho", "electron-asar"):
+        (ROOT / d).mkdir(exist_ok=True)
     (ROOT / "native-pe" / "app.exe").write_bytes(pe_fixture())
     (ROOT / "native-macho" / "app").write_bytes(macho_fixture())
-    print("synthetic native fixtures ready (PE, Mach-O)")
+    (ROOT / "electron-asar" / "app.asar").write_bytes(asar_fixture())
+    print("synthetic native/asar fixtures ready (PE, Mach-O, asar)")
 
 
 if __name__ == "__main__":

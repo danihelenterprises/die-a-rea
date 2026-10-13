@@ -1,6 +1,6 @@
-# Bench fixture: an Electron .asar archive. Built-in asar transforms are not
-# implemented (B-055), so build copies it verbatim; this case guards that a
-# binary archive no longer fails the UTF-8 text path (B-043).
+# Bench fixture: an Electron .asar archive. The built-in asar rewriter strips
+# embedded source-map references and injects the notice/canary, then repacks the
+# archive (B-055); a non-parseable archive is copied instead of erroring (B-043).
 [project]
 name = "electron-asar"
 version = "1.0.0"

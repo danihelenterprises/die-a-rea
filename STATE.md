@@ -121,10 +121,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 106 |
+| Tests (`cargo test --all`) | 110 |
 | Backlog items (`B-NNN`) | 58 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 55 |
+| Durable lessons (`K-NNN`) | 56 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -273,3 +273,7 @@ counted here (one fact, one home).
   registered the `jvm` adapter for `JavaClass`/`JavaJar`/`AndroidApk`, so Java
   `.class` and `.jar` targets now reach an external lane. Closed `B-045`; opened
   `B-058` (built-in jar repack).
+- **B-055 (K-056):** `direa_core::asar` rewrites embedded JS and repacks the
+  archive; the `.asar` build arm now hardens instead of copying, with a copy
+  fallback for unparseable archives. Bench `electron-asar` rose 0 → 35; verified
+  with a real `asar extract`. Closed `B-055`.

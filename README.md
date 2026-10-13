@@ -87,7 +87,7 @@ no extra toolchain; **adapters** add deeper protection and are bring-your-own
 | C / C++ / Rust / Swift | ELF, PE, Mach-O | symbol/debug/build-metadata strip | `direa-llvm` (Pluto / O-MVLL, compile-time) |
 | Go | ELF, PE, Mach-O | symbol/debug strip + Go build-info/ID scrub | `direa-go` (garble) |
 | JavaScript | `.js` / `.mjs` / `.cjs`, bundles | source-map + comment strip, notice/canary, decoys, runtime guard | `direa-js` (javascript-obfuscator) |
-| Electron | app directory, `.asar` | app dir: as JS/tree; `.asar`: copied verbatim (needs an adapter) | `direa-js` (+ asarmor / bytenode) |
+| Electron | app directory, `.asar` | app dir: as JS/tree; `.asar`: embedded JS hardened and repacked | `direa-js` (+ asarmor / bytenode) |
 | .NET (C#/F#/VB) | PE assemblies (`.dll`/`.exe`) | COFF symbol table, debug dir, Rich header | `direa-clr` (ConfuserEx) |
 | Java / Kotlin / Scala | `.class`, `.jar` | `.class`: debug-attribute strip; `.jar`: copied (needs an adapter) | `direa-jvm` (R8 / ProGuard) |
 | Android | `.apk` | detection + verification | `direa-jvm` (R8) |

@@ -7,6 +7,7 @@
 //! Score ([`rrs`]).
 
 pub mod adapter;
+pub mod asar;
 pub mod buildmeta;
 pub mod canary;
 pub mod discover;

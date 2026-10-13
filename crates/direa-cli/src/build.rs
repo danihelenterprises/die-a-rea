@@ -191,20 +191,39 @@ pub fn build(
                 }
             }
             TargetKind::ElectronAsar if src.is_file() => {
-                // A single-file `.asar` is a binary archive: the built-in text
-                // transforms do not apply and decoding it as UTF-8 fails (B-043).
-                // Copy it verbatim and defer to an external adapter (e.g. asarmor);
-                // built-in asar unpack/harden/repack is not implemented.
-                actions.push(
-                    "copy .asar archive verbatim (built-in asar transforms not implemented; use an adapter)"
-                        .into(),
-                );
-                if !dry_run {
+                // A single-file `.asar` is a binary archive: rewrite the embedded
+                // JS in place (source-map/comment strip, notice, canaries, guard)
+                // and rebuild the archive; fall back to a verbatim copy when the
+                // archive is not parseable (B-055).
+                if dry_run {
+                    actions.push("asar: rewrite embedded JS, drop per-file integrity".into());
+                } else {
                     ensure_parent(&dest)?;
-                    std::fs::copy(src, &dest).with_context(|| {
-                        format!("copying {} to {}", src.display(), dest.display())
-                    })?;
-                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
+                    let data =
+                        std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
+                    let transform = |text: &str| harden_js_text(text, &policy, &notice, &canaries);
+                    let (new_data, rep) = direa_core::asar::harden_archive(&data, &transform);
+                    std::fs::write(&dest, &new_data)
+                        .with_context(|| format!("writing {}", dest.display()))?;
+                    if rep.changed {
+                        actions.push(format!(
+                            "asar: rewrote {} of {} embedded file(s)",
+                            rep.files_hardened, rep.files_total
+                        ));
+                        result.notes.push(format!(
+                            "asar: hardened {} embedded JS file(s), {} file(s) total",
+                            rep.files_hardened, rep.files_total
+                        ));
+                    } else {
+                        actions.push("copy .asar archive verbatim (not a parseable asar)".into());
+                        apply_external_adapters(
+                            &dest,
+                            &policy,
+                            kind,
+                            &mut actions,
+                            &mut result.notes,
+                        );
+                    }
                 }
             }
             TargetKind::JavaScript | TargetKind::ElectronAsar => {
@@ -681,6 +700,34 @@ fn guard_source_and_output(src: &Path, dest: &Path) -> Result<()> {
         ));
     }
     Ok(())
+}
+
+/// The safe JS transforms shared by single files and asar members: source-map
+/// and comment strip, the authorization notice, canaries and the embedded guard.
+/// Decoys and tarpits are intentionally excluded here (they are applied once, at
+/// the artifact level, not per embedded file).
+fn harden_js_text(
+    text: &str,
+    policy: &ResolvedPolicy,
+    notice: &str,
+    canaries: &[String],
+) -> String {
+    let (body, _comments, _maps) = transform_js(text, policy);
+    let mut out = String::new();
+    if policy.agent_stop_notice {
+        out.push_str("/* ");
+        out.push_str(&sanitize_comment(notice));
+        out.push_str(" */\n");
+    }
+    for (i, canary) in canaries.iter().enumerate() {
+        out.push_str(&format!("/* direa-canary-{i}: {canary} */\n"));
+    }
+    out.push_str(&body);
+    if policy.anti_instrumentation {
+        out.push('\n');
+        out.push_str(direa_core::guard::JS_GUARD_SOURCE);
+    }
+    out
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1253,6 +1300,58 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
             "the .asar branch must handle the archive"
         );
         assert!(out.join("app.asar").exists(), "archive must be written");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn valid_asar_is_hardened_in_place() {
+        // Build a minimal valid asar (header pickle + data) with one JS file that
+        // carries a source-map comment.
+        let js = "var x=1;\n//# sourceMappingURL=x.js.map\n";
+        let root = serde_json::json!({"files":{"index.js":{"size":js.len(),"offset":"0"}}});
+        let json = serde_json::to_vec(&root).unwrap();
+        let pad = (4 - json.len() % 4) % 4;
+        let payload_len = 4 + json.len() + pad;
+        let header_buf_len = 4 + payload_len;
+        let mut archive = Vec::new();
+        archive.extend_from_slice(&4u32.to_le_bytes());
+        archive.extend_from_slice(&(header_buf_len as u32).to_le_bytes());
+        archive.extend_from_slice(&(payload_len as u32).to_le_bytes());
+        archive.extend_from_slice(&(json.len() as u32).to_le_bytes());
+        archive.extend_from_slice(&json);
+        archive.resize(archive.len() + pad, 0);
+        archive.extend_from_slice(js.as_bytes());
+
+        let dir = std::env::temp_dir().join(format!("direa-asar-valid-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("app.asar");
+        std::fs::write(&src, &archive).unwrap();
+
+        let manifest = Manifest {
+            targets: vec![direa_core::TargetSpec {
+                path: src.clone(),
+                kind: None,
+                adapters: vec![],
+            }],
+            ..Default::default()
+        };
+        let out = dir.join("out");
+        let res = build(&manifest, &out, false, Some(1), false).unwrap();
+        assert!(
+            res.targets[0]
+                .actions
+                .iter()
+                .any(|a| a.contains("asar: rewrote")),
+            "a valid asar must take the rewrite path: {:?}",
+            res.targets[0].actions
+        );
+        let hardened = std::fs::read(out.join("app.asar")).unwrap();
+        assert_ne!(hardened, archive, "archive must be rewritten");
+        assert!(
+            !hardened.windows(17).any(|w| w == b"sourceMappingURL="),
+            "embedded source-map reference must be stripped"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

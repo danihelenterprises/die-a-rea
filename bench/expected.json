@@ -6,7 +6,7 @@
   "native-elf": 40,
   "native-pe": 55,
   "native-macho": 55,
-  "electron-asar": 0,
+  "electron-asar": 30,
   "android-apk": 0,
   "go": 35,
   "dotnet": 18

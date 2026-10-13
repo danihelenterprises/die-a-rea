@@ -18,15 +18,12 @@ printf '\0asm\x01\0\0\0\x00\x08\x04nameabc' >"$root/wasm-module/mod.wasm"
 # Java class: magic + version + constant pool with a "SourceFile" Utf8.
 printf '\xca\xfe\xba\xbe\x00\x00\x00\x34\x00\x02\x01\x00\x0aSourceFile' >"$root/java-class/App.class"
 
-# Synthetic native fixtures (PE, Mach-O) — no toolchain needed.
+# Synthetic fixtures (PE, Mach-O, Electron .asar) — no toolchain needed.
 if command -v python3 >/dev/null 2>&1; then
     python3 "$root/gen_fixtures.py"
 else
-    printf 'python3 not found; skipping native-pe/native-macho fixtures\n' >&2
+    printf 'python3 not found; skipping native-pe/native-macho/electron-asar fixtures\n' >&2
 fi
-
-# Electron .asar: an opaque binary archive (build copies it; B-043/B-055).
-printf 'asar-bench-fixture\x00\x01\x02\x03' >"$root/electron-asar/app.asar"
 
 # Android APK: detected by extension; there is no built-in APK hardening (B-042).
 printf 'PK\x03\x04apk-bench-fixture' >"$root/android-apk/app.apk"
