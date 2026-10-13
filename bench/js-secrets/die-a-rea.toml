@@ -1,0 +1,16 @@
+# Bench fixture: a JS app with secret strings + a source map.
+[project]
+name = "js-secrets"
+version = "1.0.0"
+
+[policy]
+profile = "high"
+
+[randomization]
+enabled = false
+
+[tarpit]
+enabled = false
+
+[[targets]]
+path = "app.js"

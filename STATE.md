@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 92 |
-| Backlog items (`B-NNN`) | 37 |
+| Tests (`cargo test --all`) | 93 |
+| Backlog items (`B-NNN`) | 38 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 40 |
+| Durable lessons (`K-NNN`) | 41 |
 | Decision records (`ADR-NNNN`) | 18 |
 | Markdown docs (tracked) | 39 |
-| Commits in history | 39 |
+| Commits in history | 40 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -216,3 +216,5 @@ to bottom unless a dependency says otherwise.
   Closed `B-035`.
 - **B-036 (commit 38):** cross-platform guard detection (K-039). Closed `B-036`.
 - **B-037 (commit 39):** SARIF + JUnit report formats (K-040). Closed `B-037`.
+- **B-038 (commit 40):** end-to-end eval harness + `bench` + RRS regression gate
+  (K-041). Closed `B-038`.

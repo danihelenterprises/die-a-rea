@@ -82,6 +82,19 @@ enum Command {
         json: bool,
     },
 
+    /// Build and score every fixture in a benchmark corpus.
+    Bench {
+        /// Corpus directory (each subdirectory holds a `die-a-rea.toml`).
+        #[arg(long, default_value = "bench")]
+        dir: PathBuf,
+        /// Fail if any case scores below its `expected.json` minimum.
+        #[arg(long)]
+        check: bool,
+        /// Emit machine-readable JSON.
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Report toolchain, adapter and target readiness.
     Doctor {
         /// Emit machine-readable JSON.
@@ -226,6 +239,7 @@ fn run(cli: Cli) -> Result<()> {
             force,
         } => cmd_init(&ui, &cli.manifest, name, targets, force),
         Command::Profiles => cmd_profiles(&ui),
+        Command::Bench { dir, check, json } => cmd_bench(&ui, &dir, check, json),
         Command::Doctor { json } => cmd_doctor(&ui, &cli.manifest, json),
         Command::Explain { id, root, json } => cmd_explain(&ui, &root, &id, json),
         Command::CanarySelftest { detector, json } => cmd_canary_selftest(&ui, detector, json),
@@ -332,6 +346,88 @@ fn cmd_profiles(ui: &Ui) -> Result<()> {
                 "notice"
             },
         ));
+    }
+    Ok(())
+}
+
+fn cmd_bench(ui: &Ui, dir: &Path, check: bool, json: bool) -> Result<()> {
+    use std::collections::BTreeMap;
+
+    let expected: BTreeMap<String, u64> = if check {
+        let path = dir.join("expected.json");
+        let text = std::fs::read_to_string(&path)
+            .with_context(|| format!("reading {}", path.display()))?;
+        serde_json::from_str(&text).with_context(|| format!("parsing {}", path.display()))?
+    } else {
+        BTreeMap::new()
+    };
+
+    let entries = std::fs::read_dir(dir).with_context(|| format!("reading {}", dir.display()))?;
+    let mut rows: Vec<(String, u64, String)> = Vec::new();
+
+    for entry in entries.flatten() {
+        let case_dir = std::fs::canonicalize(entry.path()).unwrap_or_else(|_| entry.path());
+        if !case_dir.is_dir() || !case_dir.join("die-a-rea.toml").is_file() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        let mut manifest = Manifest::load(case_dir.join("die-a-rea.toml"))?;
+        for target in &mut manifest.targets {
+            target.path = case_dir.join(&target.path);
+        }
+        let src = manifest
+            .targets
+            .first()
+            .map(|t| t.path.clone())
+            .ok_or_else(|| anyhow::anyhow!("bench case '{name}' has no targets"))?;
+        let out = std::env::temp_dir().join(format!("direa-bench-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&out);
+
+        ui.timed(1, &format!("bench:{name}"), || {
+            build::build(&manifest, &out, false, None, false)
+        })?;
+
+        let dest = out.join(src.file_name().unwrap_or_default());
+        let opts = direa_verify::VerifyOptions::new(&src, &dest);
+        let run = direa_verify::run(&opts).map_err(|e| anyhow::anyhow!(e))?;
+        rows.push((
+            name,
+            u64::from(run.report.rrs),
+            run.report.grade.as_str().to_string(),
+        ));
+        let _ = std::fs::remove_dir_all(&out);
+    }
+
+    if json {
+        let array: Vec<serde_json::Value> = rows
+            .iter()
+            .map(|(name, rrs, grade)| {
+                serde_json::json!({ "name": name, "rrs": rrs, "grade": grade })
+            })
+            .collect();
+        ui.out(serde_json::to_string_pretty(&array)?);
+    } else {
+        ui.out(format!("{:<20} {:>4} {}", "case", "RRS", "grade"));
+        for (name, rrs, grade) in &rows {
+            ui.out(format!("{name:<20} {rrs:>4} {grade}"));
+        }
+    }
+
+    if check {
+        for (name, rrs, _) in &rows {
+            if let Some(min) = expected.get(name) {
+                if rrs < min {
+                    return Err(direa_core::DireaError::Refused {
+                        code: "bench_regression",
+                        message: format!(
+                            "bench case '{name}': RRS {rrs} is below the required {min}"
+                        ),
+                    }
+                    .into());
+                }
+            }
+        }
+        ui.info(1, "bench: all cases meet their minimum RRS");
     }
     Ok(())
 }

@@ -327,7 +327,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - [Responsible use](docs/ETHICS.md)
 - [Docker toolchain](docker/README.md) · [Adapters](docs/ADAPTERS.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-`verify` accepts `--with-runtime` (instrumentation axis), `--with-rea` (external adversary), `--decompiler "<cmd>"` (real control-flow axis) and `--format sarif|junit` for CI; see [docs/RRS.md](docs/RRS.md). Run `die-a-rea doctor` to see which adapters and tools are available, and `die-a-rea explain K-027` (or an ADR/B id) to read a project-memory entry. Every command takes `-v` (phase timing), `-vv` (transform trace) and `-q` (quiet), and `--error-format json` emits a coded error envelope (`error[code]` in human form).
+`verify` accepts `--with-runtime` (instrumentation axis), `--with-rea` (external adversary), `--decompiler "<cmd>"` (real control-flow axis) and `--format sarif|junit` for CI; see [docs/RRS.md](docs/RRS.md). Run `die-a-rea doctor` to see which adapters and tools are available, `die-a-rea bench --check` to score the benchmark corpus against its minimums, and `die-a-rea explain K-027` (or an ADR/B id) to read a project-memory entry. Every command takes `-v` (phase timing), `-vv` (transform trace) and `-q` (quiet), and `--error-format json` emits a coded error envelope (`error[code]` in human form).
 - [Project memory: authority map and doc-sync](docs/README.md) · [working rules](AGENTS.md) · [state & work order](STATE.md)
 
 ---

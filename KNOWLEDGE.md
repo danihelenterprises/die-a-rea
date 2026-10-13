@@ -130,6 +130,15 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-041 — `bench` is the end-to-end regression gate.** `die-a-rea bench [--check]`
+builds and scores every `bench/*/die-a-rea.toml` fixture (targets made absolute so
+`build`'s `relative_dest` resolves), and `--check` fails below `bench/expected.json`.
+CI runs it, so RRS cannot silently regress. A `crates/direa-cli/tests/e2e.rs`
+integration test drives the real binary (build → verify) via
+`CARGO_BIN_EXE_die-a-rea`. [Evidence: `crates/direa-cli/src/main.rs` (`cmd_bench`);
+`bench/`; `tests/e2e.rs`] -> Add a fixture when a new protection ships; keep the
+gate green. (ADR-0004)
+
 **K-040 — `verify --format` supports SARIF and JUnit.** `direa_verify::report`
 renders the ResistanceReport as SARIF 2.1.0 (one result per axis, level from
 exposure) or JUnit XML (one test case per axis, failing when exposure > 0.5); the

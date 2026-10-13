@@ -26,6 +26,8 @@ jobs:
         run: cargo test --all
       - name: Canary gauntlet
         run: cargo build && ./target/debug/die-a-rea canary-selftest
+      - name: RRS regression gate
+        run: ./target/debug/die-a-rea bench --check
       - name: Smoke
         run: |
           cargo build
