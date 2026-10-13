@@ -555,3 +555,18 @@ tree) anything at all; it now also reads `src-tauri` when
 `crates/direa-core/src/discover.rs` (`discover`, test
 `finds_tauri_backend_binary`); B-059] -> Check a framework's conventional
 sub-crate layout, not just the project root. (B-059)
+
+**K-062 — Extra zip entries are safe carriers for agent notices and bounded
+tarpit padding.** A `.jar`/`.apk` is a zip whose readers ignore unknown entries,
+so `jar::add_entry` appends `direa-notice.txt` (notice + canaries) and
+`direa-padding.txt` (bounded tarpit) without affecting the JVM or Android.
+Because the probes read only the measured members (`.class`/`.dex`), the carriers
+do not perturb the debug axis; tarpit bytes are recorded as injected content so
+analysis-noise reflects them. Any zip edit invalidates jar/APK signatures, which
+was already true for the class/DEX rewrites. [Evidence:
+`crates/direa-core/src/jar.rs` (`add_entry`; tests `add_entry_appends_and_keeps_
+existing`, `add_entry_rejects_unparseable`); `crates/direa-cli/src/build.rs` (jar
+and APK arms; tests `jar_embeds_notice_and_canary_entry`,
+`apk_embeds_notice_and_canary_entry`)] -> Container formats accept additive,
+non-semantic entries; keep them in a reserved namespace and out of the measured
+members. (B-046)

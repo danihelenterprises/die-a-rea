@@ -128,10 +128,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 145 |
+| Tests (`cargo test --all`) | 149 |
 | Backlog items (`B-NNN`) | 60 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 61 |
+| Durable lessons (`K-NNN`) | 62 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -324,3 +324,9 @@ counted here (one fact, one home).
   <name>` when `src-tauri/tauri.conf.json` is present; README documents Tauri.
   The adapter proper is opened as B-060 (blocked on a real `tauri build` sample).
   Closed `B-059`; opened `B-060`.
+- **B-046 (K-060, K-062):** container parity — WASM embeds the notice + bounded
+  tarpit as `direa.notice`/`direa.padding` custom sections; JAR and APK embed
+  `direa-notice.txt`/`direa-padding.txt` zip entries. The `debug-info` probe
+  ignores `direa.*` sections; jar/APK probes read only `.class`/`.dex`. Native
+  embedded guard stays link-time by design (ADR-0018); a standalone `.class` has
+  no non-semantic carrier. Closed `B-046`.

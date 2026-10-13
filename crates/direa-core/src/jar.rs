@@ -275,6 +275,36 @@ fn write_zip(entries: &[OutEntry]) -> Option<Vec<u8>> {
     Some(out)
 }
 
+/// Append one file entry to a ZIP container, returning the new archive.
+/// Returns `None` if the archive cannot be parsed or rewritten.
+pub fn add_entry(data: &[u8], name: &str, contents: &[u8]) -> Option<Vec<u8>> {
+    let entries = read_central(data)?;
+    let mut out_entries = Vec::with_capacity(entries.len() + 1);
+    for e in &entries {
+        let raw = compressed(data, e)?;
+        out_entries.push(central_to_out(e, raw.to_vec()));
+    }
+    let (payload, method, crc, comp_size) = encode(contents, false)?;
+    out_entries.push(OutEntry {
+        name: name.as_bytes().to_vec(),
+        method,
+        flags: 0,
+        mod_time: 0,
+        mod_date: 0,
+        crc,
+        comp_size,
+        uncomp_size: contents.len() as u32,
+        version_made: 20,
+        version_needed: 20,
+        internal_attrs: 0,
+        external_attrs: 0,
+        central_extra: Vec::new(),
+        comment: Vec::new(),
+        data: payload,
+    });
+    write_zip(&out_entries)
+}
+
 fn central_to_out(e: &CentralEntry, data: Vec<u8>) -> OutEntry {
     OutEntry {
         name: e.name.clone(),
@@ -585,5 +615,25 @@ mod tests {
         assert_eq!(rep.entries_hardened, 1);
         assert_eq!(read_named(&new, "classes.dex"), b"dex\n035\0AAAA!");
         assert_eq!(read_named(&new, "other.txt"), b"x");
+    }
+
+    #[test]
+    fn add_entry_appends_and_keeps_existing() {
+        let archive = build_zip(&[("App.class", b"classbytes")], false);
+        let new = add_entry(&archive, "direa-notice.txt", b"notice text").unwrap();
+        assert!(read_central(&new).is_some());
+        assert_eq!(read_named(&new, "App.class"), b"classbytes");
+        assert_eq!(read_named(&new, "direa-notice.txt"), b"notice text");
+        let names: Vec<String> = read_central(&new)
+            .unwrap()
+            .into_iter()
+            .map(|e| String::from_utf8_lossy(&e.name).to_string())
+            .collect();
+        assert_eq!(names, vec!["App.class", "direa-notice.txt"]);
+    }
+
+    #[test]
+    fn add_entry_rejects_unparseable() {
+        assert!(add_entry(b"not a zip", "a.txt", b"x").is_none());
     }
 }

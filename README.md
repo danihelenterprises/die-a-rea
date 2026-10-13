@@ -87,8 +87,8 @@ no extra toolchain; **adapters** add deeper protection and are bring-your-own
 | Electron | app directory, `.asar` | app dir: as JS/tree; `.asar`: embedded JS hardened and repacked | `direa-js` (+ asarmor / bytenode) |
 | Tauri (v2) | app bundle (`src-tauri`) | backend binary discovered + `native-post` (the web frontend is embedded in it) | `direa-llvm` (Pluto / O-MVLL) |
 | .NET (C#/F#/VB) | PE assemblies (`.dll`/`.exe`) | COFF symbol table, debug dir, Rich header | `direa-clr` (ConfuserEx) |
-| Java / Kotlin / Scala | `.class`, `.jar` | `.class`: debug-attribute strip; `.jar`: unpack, strip each `.class`, repack | `direa-jvm` (R8 / ProGuard) |
-| Android | `.apk` | DEX debug-info strip (re-sign required) | `direa-jvm` (R8) |
+| Java / Kotlin / Scala | `.class`, `.jar` | `.class`: debug-attribute strip; `.jar`: unpack, strip each `.class`, repack + notice/canary | `direa-jvm` (R8 / ProGuard) |
+| Android | `.apk` | DEX debug-info strip + notice/canary (re-sign required) | `direa-jvm` (R8) |
 | WebAssembly | `.wasm` | custom-section strip (name, producers) + notice/canary section | `direa-wasm` (wasm-opt / wasm-mutate) |
 | Any other | any file/dir | structural checks + RRS measurement | — (write one: [docs/ADAPTERS.md](docs/ADAPTERS.md)) |
 
@@ -322,7 +322,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - Target detection (ELF, Mach-O, PE, .NET, Go, JS, Electron/ASAR, WASM, APK).
 - Planning with an adapter registry and missing-adapter reporting.
 - Safe hardening: source-map removal, comment stripping, notice/canary injection.
-- Built-in, toolchain-free post: `native-post` for ELF/PE/Mach-O (incl. Go build-info), `wasm-post` (custom sections), `java-post` (debug attributes), a `.jar` unpack/harden/repack and APK DEX debug stripping (ADR-0008, K-019, K-036, K-057, K-059).
+- Built-in, toolchain-free post: `native-post` for ELF/PE/Mach-O (incl. Go build-info), `wasm-post` (custom sections), `java-post` (debug attributes), a `.jar` unpack/harden/repack and APK DEX debug stripping; containers also carry the honest notice/canary and a bounded tarpit (ADR-0008, K-019, K-036, K-057, K-059, K-060, K-062).
 - External adapters discovered via `DIREA_<ID>_ADAPTER` or `PATH`: `direa-js` (javascript-obfuscator), `direa-llvm` (Pluto/O-MVLL), `direa-clr` (.NET/ConfuserEx), `direa-jvm` (R8/ProGuard), `direa-go` (garble) and `direa-wasm` (wasm-opt/wasm-mutate); toolchains are bring-your-own (ADR-0009, K-027).
 - Runtime guard: `direa_core::guard` detects debuggers/Frida/inspectors; `verify --with-runtime` scores it, `build` embeds a behavior-safe JS guard when `anti_instrumentation` is set, and `runtime/guard/` is a linkable native C guard (ADR-0014, ADR-0018).
 - Agent-defense gauntlet: `die-a-rea canary-selftest [--detector CMD]` normalizes input (HTML entities, homoglyphs, invisible characters, whitespace), runs the prompt-injection detector (built-in and optional external) over an adversarial + red-team evasion corpus and our own payloads, and fails if any sample is missed (ADR-0006, ADR-0020).

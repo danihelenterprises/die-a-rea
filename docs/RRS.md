@@ -104,4 +104,7 @@ ignored, since they are not debug metadata (B-046). For a
 `.jar` it reads the `.class` members inside the archive, since the raw archive is
 compressed (B-058, K-057). DEX debug info is pointer-based (no byte marker), so
 it is measured structurally for `.dex` and APK `classes*.dex` members (B-056,
-K-058); the built-in APK lane strips those pointers (B-042, K-059).
+K-058); the built-in APK lane strips those pointers (B-042, K-059). The parity
+carriers a container may add — WASM `direa.*` custom sections and the
+`direa-notice.txt`/`direa-padding.txt` zip entries — are non-semantic and are
+never counted as exposure (B-046).

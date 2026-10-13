@@ -253,13 +253,25 @@ pub fn build(
                     let mut data =
                         std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
                     let rep = direa_core::wasm::strip_custom_sections(&mut data);
-                    let payload = wasm_notice_payload(&policy, &notice, &canaries);
+                    let payload = notice_payload(&policy, &notice, &canaries);
                     if !payload.is_empty() {
                         direa_core::wasm::inject_custom_section(
                             &mut data,
                             direa_core::wasm::NOTICE_SECTION,
                             payload.as_bytes(),
                         );
+                    }
+                    if policy.tarpit {
+                        let (blob, bytes) =
+                            generate_padding(&mut rng, tp.padding_kb, tp.max_total_kb, &notice);
+                        direa_core::wasm::inject_custom_section(
+                            &mut data,
+                            direa_core::wasm::PADDING_SECTION,
+                            blob.as_bytes(),
+                        );
+                        injected.padding_bytes += bytes;
+                        injected.injected_bytes += bytes;
+                        actions.push("append tarpit custom section".into());
                     }
                     std::fs::write(&dest, data)
                         .with_context(|| format!("writing {}", dest.display()))?;
@@ -298,11 +310,33 @@ pub fn build(
                     ensure_parent(&dest)?;
                     let data =
                         std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
-                    let (new_data, rep) = direa_core::jar::harden_archive(&data, &|bytes| {
+                    let (mut new_data, rep) = direa_core::jar::harden_archive(&data, &|bytes| {
                         let mut v = bytes.to_vec();
                         direa_core::java::strip_debug_attributes(&mut v);
                         v
                     });
+                    let mut extras = false;
+                    let payload = notice_payload(&policy, &notice, &canaries);
+                    if !payload.is_empty() {
+                        if let Some(next) =
+                            direa_core::jar::add_entry(&new_data, NOTICE_ENTRY, payload.as_bytes())
+                        {
+                            new_data = next;
+                            extras = true;
+                        }
+                    }
+                    if policy.tarpit {
+                        let (blob, bytes) =
+                            generate_padding(&mut rng, tp.padding_kb, tp.max_total_kb, &notice);
+                        if let Some(next) =
+                            direa_core::jar::add_entry(&new_data, PADDING_ENTRY, blob.as_bytes())
+                        {
+                            new_data = next;
+                            extras = true;
+                            injected.padding_bytes += bytes;
+                            injected.injected_bytes += bytes;
+                        }
+                    }
                     std::fs::write(&dest, &new_data)
                         .with_context(|| format!("writing {}", dest.display()))?;
                     if rep.changed {
@@ -314,7 +348,11 @@ pub fn build(
                             "jar: hardened {} .class file(s), {} file(s) total",
                             rep.entries_hardened, rep.files_total
                         ));
-                    } else {
+                    }
+                    if extras {
+                        actions.push("jar: embed notice/canary and bounded tarpit entries".into());
+                    }
+                    if !rep.changed && !extras {
                         actions.push(
                             "copy .jar archive verbatim (not a parseable jar; use the jvm adapter)"
                                 .into(),
@@ -366,11 +404,34 @@ pub fn build(
                     ensure_parent(&dest)?;
                     let data =
                         std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
-                    let (new_data, rep) = direa_core::jar::harden_entries(&data, "dex", &|bytes| {
-                        let mut v = bytes.to_vec();
-                        direa_core::dex::strip_debug_info(&mut v);
-                        v
-                    });
+                    let (mut new_data, rep) =
+                        direa_core::jar::harden_entries(&data, "dex", &|bytes| {
+                            let mut v = bytes.to_vec();
+                            direa_core::dex::strip_debug_info(&mut v);
+                            v
+                        });
+                    let mut extras = false;
+                    let payload = notice_payload(&policy, &notice, &canaries);
+                    if !payload.is_empty() {
+                        if let Some(next) =
+                            direa_core::jar::add_entry(&new_data, NOTICE_ENTRY, payload.as_bytes())
+                        {
+                            new_data = next;
+                            extras = true;
+                        }
+                    }
+                    if policy.tarpit {
+                        let (blob, bytes) =
+                            generate_padding(&mut rng, tp.padding_kb, tp.max_total_kb, &notice);
+                        if let Some(next) =
+                            direa_core::jar::add_entry(&new_data, PADDING_ENTRY, blob.as_bytes())
+                        {
+                            new_data = next;
+                            extras = true;
+                            injected.padding_bytes += bytes;
+                            injected.injected_bytes += bytes;
+                        }
+                    }
                     std::fs::write(&dest, &new_data)
                         .with_context(|| format!("writing {}", dest.display()))?;
                     if rep.changed {
@@ -382,7 +443,11 @@ pub fn build(
                             "apk: DEX edited, APK signature invalidated — re-sign before shipping"
                                 .into(),
                         );
-                    } else {
+                    }
+                    if extras {
+                        actions.push("apk: embed notice/canary and bounded tarpit entries".into());
+                    }
+                    if !rep.changed && !extras {
                         actions.push(
                             "copy .apk verbatim (no parseable DEX; use the jvm adapter for R8)"
                                 .into(),
@@ -1132,13 +1197,17 @@ fn sanitize_comment(text: &str) -> String {
     text.replace("*/", "* /")
 }
 
-/// Upper bound on the WASM notice custom-section payload.
-const MAX_WASM_NOTICE_LEN: usize = 64 * 1024;
+/// Upper bound on the injected notice payload (container sections/entries).
+const MAX_NOTICE_LEN: usize = 64 * 1024;
 
-/// Text embedded in the `direa.notice` WASM custom section: the honest
-/// authorization notice plus canary tokens, bounded. The section is
+/// Zip entries carrying container parity content (B-046).
+const NOTICE_ENTRY: &str = "direa-notice.txt";
+const PADDING_ENTRY: &str = "direa-padding.txt";
+
+/// Text embedded in a container's notice carrier (custom section / zip entry):
+/// the honest authorization notice plus canary tokens, bounded. The carriers are
 /// non-semantic, so this is behaviour-safe (ADR-0006, B-046).
-fn wasm_notice_payload(policy: &ResolvedPolicy, notice: &str, canaries: &[String]) -> String {
+fn notice_payload(policy: &ResolvedPolicy, notice: &str, canaries: &[String]) -> String {
     let mut s = String::new();
     if policy.agent_stop_notice {
         s.push_str(notice);
@@ -1148,8 +1217,8 @@ fn wasm_notice_payload(policy: &ResolvedPolicy, notice: &str, canaries: &[String
         s.push_str(c);
         s.push('\n');
     }
-    if s.len() > MAX_WASM_NOTICE_LEN {
-        s.truncate(MAX_WASM_NOTICE_LEN);
+    if s.len() > MAX_NOTICE_LEN {
+        s.truncate(MAX_NOTICE_LEN);
     }
     s
 }
@@ -1673,6 +1742,10 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
             "notice section missing: {names:?}"
         );
         assert!(
+            names.iter().any(|n| n == direa_core::wasm::PADDING_SECTION),
+            "tarpit padding section missing: {names:?}"
+        );
+        assert!(
             !names.iter().any(|n| n == "name"),
             "debug section must be gone: {names:?}"
         );
@@ -1680,6 +1753,83 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
         assert!(
             hardened.windows(needle.len()).any(|w| w == needle),
             "canary must be embedded"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    fn class_with_source_file() -> Vec<u8> {
+        let mut class = vec![0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x34];
+        class.extend_from_slice(&2u16.to_be_bytes());
+        class.push(0x01);
+        class.extend_from_slice(&10u16.to_be_bytes());
+        class.extend_from_slice(b"SourceFile");
+        class
+    }
+
+    #[test]
+    fn jar_embeds_notice_and_canary_entry() {
+        let jar = stored_jar(b"App.class", &class_with_source_file());
+        let dir = std::env::temp_dir().join(format!("direa-jar-notice-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("app.jar");
+        std::fs::write(&src, &jar).unwrap();
+
+        let mut manifest = Manifest {
+            targets: vec![direa_core::TargetSpec {
+                path: src.clone(),
+                kind: None,
+                adapters: vec![],
+            }],
+            ..Default::default()
+        };
+        manifest.agent_defense.canaries = vec!["lic-jar".into()];
+        manifest.tarpit.enabled = false;
+        let out = dir.join("out");
+        build(&manifest, &out, false, Some(1), false).unwrap();
+
+        let hardened = std::fs::read(out.join("app.jar")).unwrap();
+        assert_eq!(direa_core::jar::class_entries(&hardened).len(), 1);
+        let texts = direa_core::jar::entries_with_ext(&hardened, "txt");
+        assert!(
+            texts
+                .iter()
+                .any(|t| String::from_utf8_lossy(t).contains("DIREA-CANARY-lic-jar")),
+            "notice/canary entry missing: {texts:?}"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn apk_embeds_notice_and_canary_entry() {
+        let apk = stored_jar(b"classes.dex", &dex_with_debug());
+        let dir = std::env::temp_dir().join(format!("direa-apk-notice-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("app.apk");
+        std::fs::write(&src, &apk).unwrap();
+
+        let mut manifest = Manifest {
+            targets: vec![direa_core::TargetSpec {
+                path: src.clone(),
+                kind: None,
+                adapters: vec![],
+            }],
+            ..Default::default()
+        };
+        manifest.agent_defense.canaries = vec!["lic-apk".into()];
+        manifest.tarpit.enabled = false;
+        let out = dir.join("out");
+        build(&manifest, &out, false, Some(1), false).unwrap();
+
+        let hardened = std::fs::read(out.join("app.apk")).unwrap();
+        assert!(hardened.starts_with(b"PK"));
+        let texts = direa_core::jar::entries_with_ext(&hardened, "txt");
+        assert!(
+            texts
+                .iter()
+                .any(|t| String::from_utf8_lossy(t).contains("DIREA-CANARY-lic-apk")),
+            "notice/canary entry missing: {texts:?}"
         );
         let _ = std::fs::remove_dir_all(&dir);
     }

@@ -15,6 +15,9 @@ pub const SECTION_PREFIX: &str = "direa.";
 /// Custom section carrying the honest authorization notice + canary tokens.
 pub const NOTICE_SECTION: &str = "direa.notice";
 
+/// Custom section carrying bounded tarpit padding (analysis-cost inflation).
+pub const PADDING_SECTION: &str = "direa.padding";
+
 /// Zero the contents of every WASM custom section.
 pub fn strip_custom_sections(data: &mut [u8]) -> StripReport {
     let mut report = StripReport {
