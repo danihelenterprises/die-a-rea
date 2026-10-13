@@ -3,7 +3,7 @@
 # die-a-rea
 
 **D.I.E.** — **D**ecompiler **I**nterference **E**ngine
-**A - R.E.A** — **A**nti-**R**everse-**E**ngineer **A**nything
+**A. - R.E.A** — **A**nti-**R**everse-**E**ngineer **A**nything
 
 *Make the reverse-engineering agent die a little.*
 
