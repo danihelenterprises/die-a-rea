@@ -60,7 +60,8 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-044 | Bundle reference adapters for Go (`garble`) and WASM (`wasm-opt`/`wasm-mutate`) | Medium | Adapters | Open | Registry entries `go`/`wasm` exist but no `adapters/{go,wasm}/direa-*` scripts, unlike clr/js/jvm/llvm. |
 | B-045 | Add a JVM `.class`/`.jar` external adapter lane | Medium | Adapters | Open | `jvm` is registered for `AndroidApk` only; `.class` gets `java-post` alone and a `.jar` is typed `Unknown`. |
 | B-046 | Extend guard embedding and canary/decoy/tarpit parity beyond JS | Medium | Runtime | Open | Canaries/notice/decoys are embedded only for JS; tarpits skip WASM/Java/APK; the native guard is link-time only. |
-| B-047 | Add managed/bytecode/WASM RRS probes (Java, DEX, WASM names, .NET) | Medium | RRS | Open | `debug-info` matches native markers only, so `java-post`/`wasm-post` wins are unmeasured (K-042). |
+| B-047 | Add managed/bytecode/WASM RRS probes (Java, DEX, WASM names, .NET) | Medium | RRS | Closed | `debug-info` is now format-aware: native DWARF/PDB, JVM debug attributes and WASM custom sections, so `java-post`/`wasm-post` wins are measured (K-050). DEX debug still unmeasured (B-056). |
+| B-056 | DEX debug-info measurement (needs a DEX parser) | Low | RRS | Open | APK hardening (B-042) and its measurement both need DEX parsing; DEX debug info has no stable byte marker. Surfaced by B-047. |
 | B-048 | Extend the real REA adversary (`--with-rea`) beyond JS/asar targets | Medium | RRS | Open | `run_rea` uses `rea_js_target`, so only JS/Electron can gate on the adversary. |
 | B-049 | Broaden `init` artifact discovery (Go/.NET/Android/C-C++) | Low | Tooling | Open | `discover` reads Cargo.toml/package.json/pom.xml only. |
 | B-050 | Add bench fixtures for PE/Mach-O/Go/.NET/asar/APK | Medium | RRS | Open | `bench --check` covers JS file/tree, WASM, Java class and ELF only (K-043). |

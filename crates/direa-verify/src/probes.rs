@@ -153,7 +153,43 @@ impl Probe for SymbolProbe {
     }
 }
 
-/// Detects debug metadata (DWARF / PDB) presence.
+/// Native debug metadata markers (DWARF / PDB / Mach-O `__DWARF`).
+const NATIVE_DEBUG_MARKERS: &[&[u8]] = &[b".debug_info", b".debug_line", b"__DWARF", b".pdb"];
+
+/// JVM debug-only attribute names (constant-pool `Utf8` entries). Cleared by the
+/// built-in `java-post` (B-047).
+const JVM_DEBUG_MARKERS: &[&[u8]] = &[
+    b"SourceFile",
+    b"SourceDebugExtension",
+    b"LineNumberTable",
+    b"LocalVariableTable",
+    b"LocalVariableTypeTable",
+];
+
+/// Debug metadata recoverable from one blob, if any. Format-aware so JVM/WASM
+/// metadata is measured without false positives on unrelated binaries (B-047).
+fn debug_metadata(bytes: &[u8]) -> Option<&'static str> {
+    if NATIVE_DEBUG_MARKERS
+        .iter()
+        .any(|m| count_occurrences(bytes, m) > 0)
+    {
+        return Some("native debug metadata");
+    }
+    if bytes.starts_with(&[0xCA, 0xFE, 0xBA, 0xBE])
+        && JVM_DEBUG_MARKERS
+            .iter()
+            .any(|m| count_occurrences(bytes, m) > 0)
+    {
+        return Some("JVM debug attributes");
+    }
+    if bytes.starts_with(b"\0asm") && !direa_core::wasm::custom_section_names(bytes).is_empty() {
+        return Some("WASM custom section");
+    }
+    None
+}
+
+/// Detects debug metadata: native DWARF/PDB, JVM debug attributes, WASM custom
+/// sections (name/producers). Boolean probe (B-047).
 pub struct DebugInfoProbe;
 
 impl Probe for DebugInfoProbe {
@@ -168,25 +204,11 @@ impl Probe for DebugInfoProbe {
     }
     fn measure(&self, target: &Path) -> Result<ProbeReading, String> {
         let blobs = collect_bytes(target)?;
-        let mut present = false;
-        for bytes in &blobs {
-            if count_occurrences(bytes, b".debug_info") > 0
-                || count_occurrences(bytes, b".debug_line") > 0
-                || count_occurrences(bytes, b"__DWARF") > 0
-                || count_occurrences(bytes, b".pdb") > 0
-            {
-                present = true;
-                break;
-            }
-        }
+        let found = blobs.iter().find_map(|b| debug_metadata(b));
         Ok(ProbeReading {
             axis: self.axis(),
-            raw: if present { 1.0 } else { 0.0 },
-            detail: if present {
-                "debug metadata present".into()
-            } else {
-                "no debug metadata markers".into()
-            },
+            raw: if found.is_some() { 1.0 } else { 0.0 },
+            detail: found.unwrap_or("no debug metadata markers").to_string(),
         })
     }
 }
@@ -367,6 +389,48 @@ mod tests {
         let p = temp_file("dbg.bin", b"....section .debug_info....");
         assert_eq!(DebugInfoProbe.measure(&p).unwrap().raw, 1.0);
         let _ = std::fs::remove_file(p);
+    }
+
+    #[test]
+    fn jvm_debug_attributes_are_measured() {
+        // magic + version + constant_pool_count=2 + Utf8 "SourceFile".
+        let mut data = vec![0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x34];
+        data.extend_from_slice(&2u16.to_be_bytes());
+        data.push(0x01);
+        data.extend_from_slice(&10u16.to_be_bytes());
+        data.extend_from_slice(b"SourceFile");
+        let p = temp_file("dbg.class", &data);
+        assert_eq!(DebugInfoProbe.measure(&p).unwrap().raw, 1.0);
+
+        let mut stripped = data.clone();
+        direa_core::java::strip_debug_attributes(&mut stripped);
+        let p2 = temp_file("dbg-stripped.class", &stripped);
+        assert_eq!(
+            DebugInfoProbe.measure(&p2).unwrap().raw,
+            0.0,
+            "java-post must make the debug axis measurable and clear"
+        );
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_file(p2);
+    }
+
+    #[test]
+    fn wasm_custom_section_is_measured() {
+        let mut data = b"\0asm\x01\0\0\0".to_vec();
+        data.extend_from_slice(b"\x00\x08\x04nameabc");
+        let p = temp_file("dbg.wasm", &data);
+        assert_eq!(DebugInfoProbe.measure(&p).unwrap().raw, 1.0);
+
+        let mut stripped = data.clone();
+        direa_core::wasm::strip_custom_sections(&mut stripped);
+        let p2 = temp_file("dbg-stripped.wasm", &stripped);
+        assert_eq!(
+            DebugInfoProbe.measure(&p2).unwrap().raw,
+            0.0,
+            "wasm-post must make the debug axis measurable and clear"
+        );
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_file(p2);
     }
 
     #[test]

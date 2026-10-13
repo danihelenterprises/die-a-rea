@@ -19,7 +19,7 @@ not affect the score.
 |---|---:|---|
 | `string-exposure` | 1.5 | signal-to-noise of identifier/literal tokens (ADR-0010) |
 | `symbol-exposure` | 1.0 | symbol/relocation section markers (`nm` proxy) |
-| `debug-metadata-exposure` | 0.8 | DWARF/PDB markers (boolean) |
+| `debug-metadata-exposure` | 0.8 | native DWARF/PDB, JVM debug attributes, WASM custom sections (boolean) |
 | `source-map-exposure` | 1.2 | `*.map`, `sourceMappingURL`, `sourcesContent` |
 | `control-flow-exposure` | 1.5 | external decompiler (`--decompiler`; skipped when unset, ADR-0017) |
 | `analysis-noise` | 1.5 | injected decoy/tarpit fraction (from build metadata) |
@@ -94,3 +94,9 @@ For native targets, the symbol and debug axes are moved by the built-in
 metadata in-process (ADR-0008). Because de-stripping must also scrub the literal
 section/debug *names* (not just their data), the probes are what confirm it —
 see lesson K-012.
+
+The `debug-metadata-exposure` probe is format-aware: it also detects JVM
+debug-only attributes (`SourceFile`, `LineNumberTable`, ...) and WASM custom
+sections (the `name`/`producers` sections), so the built-in `java-post` and
+`wasm-post` transforms are measured rather than silently skipped (B-047). DEX
+debug info is not yet measured (a DEX parser is needed).

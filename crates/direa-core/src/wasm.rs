@@ -41,6 +41,46 @@ pub fn strip_custom_sections(data: &mut [u8]) -> StripReport {
     report
 }
 
+/// Names of the custom sections (id 0) present in a WASM module. Empty names
+/// (e.g. a section already stripped) are omitted.
+///
+/// Used by the `debug-info` probe so `wasm-post` wins are measurable for `.wasm`
+/// targets instead of silently skipped (B-047, K-004).
+pub fn custom_section_names(data: &[u8]) -> Vec<String> {
+    let mut names = Vec::new();
+    if data.len() < 8 || &data[0..4] != b"\0asm" {
+        return names;
+    }
+    let mut pos = 8usize;
+    while pos < data.len() {
+        let id = data[pos];
+        pos += 1;
+        let Some((size, n)) = read_leb(data, pos) else {
+            break;
+        };
+        pos += n;
+        let end = pos.saturating_add(size as usize);
+        if end > data.len() {
+            break;
+        }
+        if id == 0 && pos < end {
+            if let Some((nlen, nbytes)) = read_leb(data, pos) {
+                let start = pos + nbytes;
+                let stop = start.saturating_add(nlen as usize);
+                if stop <= end {
+                    if let Ok(name) = std::str::from_utf8(&data[start..stop]) {
+                        if !name.is_empty() {
+                            names.push(name.to_string());
+                        }
+                    }
+                }
+            }
+        }
+        pos = end;
+    }
+    names
+}
+
 fn read_leb(data: &[u8], mut pos: usize) -> Option<(u64, usize)> {
     let start = pos;
     let mut result: u64 = 0;
@@ -87,6 +127,17 @@ mod tests {
             "name section must be cleared"
         );
         assert!(!d.windows(3).any(|w| w == b"abc"));
+    }
+
+    #[test]
+    fn custom_section_names_reads_and_clears() {
+        let mut d = wasm_fixture();
+        assert_eq!(custom_section_names(&d), vec!["name".to_string()]);
+        strip_custom_sections(&mut d);
+        assert!(
+            custom_section_names(&d).is_empty(),
+            "after stripping, no named custom section should remain"
+        );
     }
 
     #[test]

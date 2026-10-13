@@ -121,10 +121,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 100 |
-| Backlog items (`B-NNN`) | 55 |
+| Tests (`cargo test --all`) | 103 |
+| Backlog items (`B-NNN`) | 56 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 49 |
+| Durable lessons (`K-NNN`) | 50 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -255,3 +255,6 @@ counted here (one fact, one home).
   deferred to an adapter instead of being decoded as UTF-8; the test bowl `asar`
   case now succeeds. Closed `B-043`; opened `B-055` for real built-in asar
   transforms.
+- **B-047 (K-050):** the `debug-info` probe is format-aware — native DWARF/PDB,
+  JVM debug attributes and WASM custom sections — so `java-post`/`wasm-post`
+  wins show up in RRS. Closed `B-047`; opened `B-056` for DEX debug measurement.

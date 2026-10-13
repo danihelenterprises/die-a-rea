@@ -406,3 +406,16 @@ registered for Electron). [Evidence: `crates/direa-cli/src/build.rs`
 (`ElectronAsar` file arm; test `asar_file_is_copied_not_decoded_as_utf8`); the
 test bowl surfaced it (B-052)] -> Gate a transform on content shape, not on the
 extension that selected the target kind. (B-043, B-055)
+
+**K-050 — An axis that is skipped is not necessarily inapplicable.** The
+`debug-metadata-exposure` probe only recognised native markers, so `java-post`
+and `wasm-post` (which strip JVM debug attributes and WASM custom sections) had
+no measurable effect: the axis was skipped on `.class`/`.wasm` targets (K-004)
+even though debug metadata was present. Making the probe format-aware — gating
+JVM markers on the class magic and WASM on a custom-section parse — produces the
+axis and lets those transforms be scored. [Evidence:
+`crates/direa-verify/src/probes.rs` (`debug_metadata`); tests
+`jvm_debug_attributes_are_measured`, `wasm_custom_section_is_measured`;
+`crates/direa-core/src/wasm.rs` (`custom_section_names`)] -> When a transform
+targets metadata, confirm a probe actually measures it for that format (K-042
+spirit); a skipped axis can hide a real win. (B-047)
