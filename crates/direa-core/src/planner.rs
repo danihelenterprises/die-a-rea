@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Read;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -77,7 +79,7 @@ pub fn detect_kind(path: &Path, bytes: &[u8]) -> TargetKind {
     }
 
     if bytes.starts_with(b"\x7fELF") {
-        return if looks_like_go(bytes) {
+        return if looks_like_go(bytes) || file_contains_any(path, GO_MARKERS) {
             TargetKind::Go
         } else {
             TargetKind::NativeElf
@@ -90,7 +92,7 @@ pub fn detect_kind(path: &Path, bytes: &[u8]) -> TargetKind {
         return TargetKind::NativeMachO;
     }
     if bytes.starts_with(b"MZ") {
-        if looks_like_dotnet(bytes) {
+        if looks_like_dotnet(bytes) || file_contains_any(path, DOTNET_MARKERS) {
             return TargetKind::DotNet;
         }
         return TargetKind::NativePe;
@@ -114,14 +116,64 @@ fn is_macho(bytes: &[u8]) -> bool {
     )
 }
 
+/// Markers that identify a Go binary (build ID / build info / runtime symbol).
+const GO_MARKERS: &[&[u8]] = &[
+    b"Go build ID",
+    b"go:buildid",
+    b"runtime.main",
+    b"\xff Go buildinf:",
+];
+
+/// Markers that identify a .NET assembly (CLI metadata root / CLR import).
+const DOTNET_MARKERS: &[&[u8]] = &[b"mscoree.dll", b"BSJB", b".NETCoreApp"];
+
+/// Upper bound on the streaming scan used when a marker is not in the sniff
+/// prefix. Bounds the cost on huge artifacts.
+const DETECT_SCAN_LIMIT: u64 = 128 * 1024 * 1024;
+
 fn looks_like_go(bytes: &[u8]) -> bool {
-    contains(bytes, b"Go build ID")
-        || contains(bytes, b"go:buildid")
-        || contains(bytes, b"runtime.main")
+    GO_MARKERS.iter().any(|m| contains(bytes, m))
 }
 
 fn looks_like_dotnet(bytes: &[u8]) -> bool {
-    contains(bytes, b"mscoree.dll") || contains(bytes, b"BSJB") || contains(bytes, b".NETCoreApp")
+    DOTNET_MARKERS.iter().any(|m| contains(bytes, m))
+}
+
+/// Search a file for any of `needles`, streaming in bounded chunks with overlap
+/// so a marker straddling a chunk boundary is still found.
+///
+/// Many format markers sit far from the start of the file (a Go `runtime.main`
+/// can be megabytes in; a .NET `BSJB` metadata root is addressed by a PE data
+/// directory), so detection cannot rely on a fixed sniff prefix (K-047).
+fn file_contains_any(path: &Path, needles: &[&[u8]]) -> bool {
+    let max = needles.iter().map(|n| n.len()).max().unwrap_or(1);
+    let mut file = match File::open(path) {
+        Ok(f) => f,
+        Err(_) => return false,
+    };
+    let mut buf = vec![0u8; 64 * 1024];
+    let mut carry: Vec<u8> = Vec::new();
+    let mut total: u64 = 0;
+    loop {
+        let n = match file.read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => n,
+            Err(_) => return false,
+        };
+        total += n as u64;
+        let mut window = Vec::with_capacity(carry.len() + n);
+        window.extend_from_slice(&carry);
+        window.extend_from_slice(&buf[..n]);
+        if needles.iter().any(|nd| contains(&window, nd)) {
+            return true;
+        }
+        let keep = max.saturating_sub(1).min(window.len());
+        carry = window[window.len() - keep..].to_vec();
+        if total >= DETECT_SCAN_LIMIT {
+            break;
+        }
+    }
+    false
 }
 
 fn has_asar(dir: &Path) -> bool {
@@ -333,6 +385,34 @@ mod tests {
         };
         let plans = plan_manifest(&m, &default_registry());
         assert_eq!(plans[0].kind, TargetKind::NativeElf);
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn detects_go_marker_beyond_the_sniff_window() {
+        // The `runtime.main` marker sits past the 4 KiB sniff prefix (as in real
+        // Go binaries, e.g. fzf at ~2 MB); detection must still find it (B-053).
+        let path = std::env::temp_dir().join(format!("direa-go-late-{}", std::process::id()));
+        let mut data = b"\x7fELF\x02\x01\x01\x00".to_vec();
+        data.resize(8192, 0);
+        data.extend_from_slice(b".... runtime.main ....");
+        std::fs::write(&path, &data).unwrap();
+        let prefix = &data[..data.len().min(4096)];
+        assert_eq!(detect_kind(&path, prefix), TargetKind::Go);
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn detects_dotnet_marker_beyond_the_sniff_window() {
+        // The `BSJB` metadata root is beyond the sniff prefix (as in real
+        // assemblies, e.g. Newtonsoft.Json at ~212 KB) (B-053).
+        let path = std::env::temp_dir().join(format!("direa-dotnet-late-{}", std::process::id()));
+        let mut data = b"MZ".to_vec();
+        data.resize(8192, 0);
+        data.extend_from_slice(b"....BSJB....");
+        std::fs::write(&path, &data).unwrap();
+        let prefix = &data[..data.len().min(4096)];
+        assert_eq!(detect_kind(&path, prefix), TargetKind::DotNet);
         let _ = std::fs::remove_file(path);
     }
 

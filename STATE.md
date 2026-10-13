@@ -121,10 +121,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 96 |
+| Tests (`cargo test --all`) | 98 |
 | Backlog items (`B-NNN`) | 54 |
-| Open backlog items (High) | 2 |
-| Durable lessons (`K-NNN`) | 46 |
+| Open backlog items (High) | 1 |
+| Durable lessons (`K-NNN`) | 47 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -245,3 +245,6 @@ counted here (one fact, one home).
 - **Test bowl naming:** the harness is branded **the test bowl** — image
   `die-a-rea-testbowl`, launcher `./testbowl`, output `testbowl-out/`; the source
   stays in `eval/` (so ADR-0021/K-046 remain accurate). No behaviour change.
+- **B-053 (K-047):** `detect_kind` streams the file for Go/.NET markers beyond the
+  4 KiB sniff window; the test bowl now classifies fzf as `go` and
+  Newtonsoft.Json as `dot-net` (was `native-elf`/`native-pe`). Closed `B-053`.

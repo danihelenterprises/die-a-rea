@@ -65,8 +65,8 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-050 | Add bench fixtures for PE/Mach-O/Go/.NET/asar/APK | Medium | RRS | Open | `bench --check` covers JS file/tree, WASM, Java class and ELF only (K-043). |
 | B-051 | Teach `doctor` about `wasm-opt` and a decompiler for the control-flow axis | Low | Tooling | Open | Tool list has node/garble/clang/dotnet/r8/nm/objdump but no wasm tool or Ghidra. |
 | B-052 | Docker OSS evaluation harness: harden pinned real-world artifacts end to end | Medium | Tooling | Closed | `eval/` fetches pinned artifacts across every ecosystem and runs plan/build/verify with logs + readable output; on-demand, network confined to the harness (ADR-0021, K-046); `asar` surfaces B-043. |
-| B-053 | Go and .NET assemblies are misdetected by the 4 KiB sniff window | High | Adapters | Open | Found by B-052: fzf (Go) → native-elf (`runtime.main` @1.99 MB); Newtonsoft.Json → native-pe (`BSJB` @212 KB). Consequence: the `clr`/`go` adapters are never selected by auto-detection. |
-| B-054 | `TargetKind` JSON/manifest name `java-script` diverges from `as_str()` `javascript` | Low | Tooling | Open | serde kebab-case emits `java-script`; `plan` (human) prints `javascript`. Affects `kind =` overrides and JSON consumers. Found by B-052. |
+| B-053 | Go and .NET assemblies are misdetected by the 4 KiB sniff window | High | Adapters | Closed | Fixed: `detect_kind` streams the file (bounded) for format markers beyond the sniff prefix; fzf→`go`, Newtonsoft.Json→`dot-net` in the test bowl (K-047). Found by B-052. |
+| B-054 | `TargetKind` JSON/manifest name diverges from `as_str()` (`java-script`/`dot-net`) | Low | Tooling | Open | serde kebab-case emits `java-script`/`dot-net`; `plan` (human) prints `javascript`/`dotnet`. Affects `kind =` overrides and JSON consumers. Found by B-052. |
 
 ## Closed / Decided
 

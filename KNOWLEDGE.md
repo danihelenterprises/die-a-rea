@@ -373,3 +373,15 @@ configures no `[verify]` command (so the artifacts are read, not run). [Evidence
 `docs/adr/ADR-0021`; third-party inputs listed in `docs/PIGGYBACK.md`] -> Keep
 network/exec anywhere but the product boundary; a harness that blurs it
 reintroduces the exact risk ADR-0001 removed. (ADR-0001, ADR-0007, ADR-0021)
+
+**K-047 — Format markers can sit far past a fixed sniff window.** Reading only a
+fixed prefix to classify a file miscategorises real binaries: fzf's Go
+`runtime.main` sits at ~2 MB and Newtonsoft.Json's `BSJB` metadata root at
+~212 KB, so both were reported as plain native. `detect_kind` must stream the
+file (bounded, chunked, with overlap) for format markers, or parse the container
+headers, not rely on the first 4 KiB. [Evidence:
+`crates/direa-core/src/planner.rs` (`file_contains_any`, `GO_MARKERS`,
+`DOTNET_MARKERS`; tests `detects_go_marker_beyond_the_sniff_window`,
+`detects_dotnet_marker_beyond_the_sniff_window`); found by the test bowl (B-052)]
+-> A sniff window is a heuristic; confirm real artifacts before trusting a
+detector's coverage. (B-053)

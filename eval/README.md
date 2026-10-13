@@ -82,8 +82,9 @@ command is run, so untrusted artifacts are never executed.
 - `asar` is expected to fail today (single-file `.asar` read as UTF-8, B-043).
 - Windows (PE) and macOS (Mach-O) artifacts are not fetched; the native path is
   covered via ELF.
-- The first run surfaced two detection gaps: `fzf` (Go) and `Newtonsoft.Json`
-  (.NET) are classified from the 4 KiB sniff window as native ELF/PE because
-  their format markers sit later in the file (B-053); and the JS kind serializes
-  as `java-script` (B-054). See `BACKLOG.md` (B-042…B-054) for the capability
-  gaps this harness surfaces.
+- Auto-detection now classifies `fzf` (Go) and `Newtonsoft.Json` (.NET)
+  correctly: markers beyond the 4 KiB sniff prefix are found by a bounded
+  streaming scan (B-053, K-047).
+- `TargetKind` still serializes as `java-script`/`dot-net` in JSON and `kind =`
+  manifest overrides, while `plan` (human) prints `javascript`/`dotnet` (B-054).
+- See `BACKLOG.md` (B-042…B-054) for the remaining capability gaps.
