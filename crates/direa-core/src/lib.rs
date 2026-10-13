@@ -11,6 +11,7 @@ pub mod buildmeta;
 pub mod canary;
 pub mod error;
 pub mod guard;
+pub mod java;
 pub mod manifest;
 pub mod native_post;
 pub mod planner;
@@ -18,6 +19,7 @@ pub mod policy;
 pub mod random;
 pub mod rrs;
 pub mod scan;
+pub mod wasm;
 
 pub use adapter::{
     which, AdapterEntry, AdapterOp, AdapterRequest, AdapterResponse, Finding, PlanStep, Severity,

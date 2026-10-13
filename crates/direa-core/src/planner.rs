@@ -17,6 +17,7 @@ pub enum TargetKind {
     JavaScript,
     ElectronAsar,
     Wasm,
+    JavaClass,
     AndroidApk,
     Unknown,
 }
@@ -32,6 +33,7 @@ impl TargetKind {
             TargetKind::JavaScript => "javascript",
             TargetKind::ElectronAsar => "electron-asar",
             TargetKind::Wasm => "wasm",
+            TargetKind::JavaClass => "java-class",
             TargetKind::AndroidApk => "android-apk",
             TargetKind::Unknown => "unknown",
         }
@@ -69,6 +71,9 @@ pub fn detect_kind(path: &Path, bytes: &[u8]) -> TargetKind {
     }
     if ext == "wasm" {
         return TargetKind::Wasm;
+    }
+    if ext == "class" {
+        return TargetKind::JavaClass;
     }
 
     if bytes.starts_with(b"\x7fELF") {
@@ -178,6 +183,8 @@ pub fn default_registry() -> Vec<AdapterEntry> {
     vec![
         // Built-in, in-process adapters.
         builtin("native-post", native_kinds.clone()),
+        builtin("wasm-post", vec![TargetKind::Wasm]),
+        builtin("java-post", vec![TargetKind::JavaClass]),
         builtin("agent-canary", TargetKind::ALL.to_vec()),
         // External, subprocess adapters (bring-your-own toolchain; ADR-0002/0009).
         external(
@@ -194,7 +201,7 @@ pub fn default_registry() -> Vec<AdapterEntry> {
 }
 
 impl TargetKind {
-    pub const ALL: [TargetKind; 10] = [
+    pub const ALL: [TargetKind; 11] = [
         TargetKind::NativeElf,
         TargetKind::NativeMachO,
         TargetKind::NativePe,
@@ -203,6 +210,7 @@ impl TargetKind {
         TargetKind::JavaScript,
         TargetKind::ElectronAsar,
         TargetKind::Wasm,
+        TargetKind::JavaClass,
         TargetKind::AndroidApk,
         TargetKind::Unknown,
     ];

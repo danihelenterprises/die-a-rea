@@ -204,6 +204,38 @@ pub fn build(
                     apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
                 }
             }
+            TargetKind::Wasm => {
+                actions.push("wasm-post: strip custom sections".into());
+                if !dry_run {
+                    ensure_parent(&dest)?;
+                    let mut data =
+                        std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
+                    let rep = direa_core::wasm::strip_custom_sections(&mut data);
+                    std::fs::write(&dest, data)
+                        .with_context(|| format!("writing {}", dest.display()))?;
+                    result.notes.push(format!(
+                        "wasm-post: cleared {} custom section(s)",
+                        rep.removed.len()
+                    ));
+                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
+                }
+            }
+            TargetKind::JavaClass => {
+                actions.push("java-post: strip debug attributes".into());
+                if !dry_run {
+                    ensure_parent(&dest)?;
+                    let mut data =
+                        std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
+                    let rep = direa_core::java::strip_debug_attributes(&mut data);
+                    std::fs::write(&dest, data)
+                        .with_context(|| format!("writing {}", dest.display()))?;
+                    result.notes.push(format!(
+                        "java-post: cleared {} debug attribute(s)",
+                        rep.removed.len()
+                    ));
+                    apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
+                }
+            }
             TargetKind::NativeElf
             | TargetKind::NativeMachO
             | TargetKind::NativePe

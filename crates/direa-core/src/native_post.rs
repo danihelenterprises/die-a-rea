@@ -20,6 +20,8 @@ pub enum NativeFormat {
     Elf,
     MachO,
     Pe,
+    Wasm,
+    JavaClass,
     #[default]
     Unknown,
 }
@@ -30,6 +32,8 @@ impl fmt::Display for NativeFormat {
             NativeFormat::Elf => "elf",
             NativeFormat::MachO => "macho",
             NativeFormat::Pe => "pe",
+            NativeFormat::Wasm => "wasm",
+            NativeFormat::JavaClass => "java-class",
             NativeFormat::Unknown => "unknown",
         };
         f.write_str(s)
@@ -49,7 +53,7 @@ pub struct StripReport {
 }
 
 impl StripReport {
-    fn note(&mut self, name: impl Into<String>, bytes: u64) {
+    pub(crate) fn note(&mut self, name: impl Into<String>, bytes: u64) {
         self.removed.push(name.into());
         self.bytes_zeroed += bytes;
         self.changed = true;
@@ -159,7 +163,8 @@ pub fn strip_symbols(data: &mut [u8]) -> StripReport {
         NativeFormat::Elf => strip_elf(data, &mut report),
         NativeFormat::Pe => strip_pe(data, &mut report),
         NativeFormat::MachO => strip_macho(data, &mut report),
-        NativeFormat::Unknown => Ok(()),
+        // WASM and Java classes have their own toolchain-free modules.
+        NativeFormat::Wasm | NativeFormat::JavaClass | NativeFormat::Unknown => Ok(()),
     };
     // Go build metadata is format-agnostic (it can live in ELF, PE or Mach-O).
     strip_go_build_info(data, &mut report);

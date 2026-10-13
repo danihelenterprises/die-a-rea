@@ -130,6 +130,15 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-036 — WASM and Java `.class` have toolchain-free built-in post.** `wasm-post`
+empties custom-section names and zeroes their payloads (framing stays valid);
+`java-post` zeroes constant-pool `Utf8` names of debug-only attributes
+(SourceFile/LineNumberTable/LocalVariableTable/LocalVariableTypeTable/
+SourceDebugExtension) so the JVM skips them — reflection-sensitive attributes
+(`Signature`, `MethodParameters`) are left intact. [Evidence:
+`crates/direa-core/src/{wasm,java}.rs`; tests; `build` arms] -> Never strip
+semantic WASM sections or reflection attributes. (ADR-0008)
+
 **K-035 — `die-a-rea explain <id>` surfaces the project memory.** It reads
 `KNOWLEDGE.md` (`K-NNN` blocks), `BACKLOG.md` (`B-NNN` rows) and
 `docs/adr/ADR-NNNN-*` from `--root` (default cwd), printing the entry or a coded
