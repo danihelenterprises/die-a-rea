@@ -27,8 +27,6 @@ pub enum Axis {
     ControlFlowExposure,
     /// Success of runtime instrumentation (debugger, Frida, CDP, V8 inspector).
     RuntimeInstrumentationExposure,
-    /// Whether an LLM analysis agent was deceived or gated by the canary layer.
-    AgentDeception,
     /// Share of injected decoy/tarpit content (randomization + padding).
     AnalysisNoise,
 }
@@ -42,7 +40,6 @@ impl Axis {
             Axis::SourceMapExposure => 1.2,
             Axis::ControlFlowExposure => 1.5,
             Axis::RuntimeInstrumentationExposure => 1.0,
-            Axis::AgentDeception => 2.0,
             Axis::AnalysisNoise => 1.5,
         }
     }
@@ -55,7 +52,6 @@ impl Axis {
             Axis::SourceMapExposure => "source-map-exposure",
             Axis::ControlFlowExposure => "control-flow-exposure",
             Axis::RuntimeInstrumentationExposure => "runtime-instrumentation-exposure",
-            Axis::AgentDeception => "agent-deception",
             Axis::AnalysisNoise => "analysis-noise",
         }
     }
@@ -213,13 +209,12 @@ mod tests {
 
     #[test]
     fn weights_are_applied() {
-        // Agent-deception (weight 2.0) fully resisted; strings fully exposed.
+        // Equal weights: one axis fully resisted, one fully exposed -> 50.
         let m = vec![
-            AxisMeasurement::new(Axis::AgentDeception, 1.0, 0.0),
+            AxisMeasurement::new(Axis::AnalysisNoise, 1.0, 0.0),
             AxisMeasurement::new(Axis::StringExposure, 1.0, 1.0),
         ];
-        // 2.0 / (2.0 + 1.5) = 0.571 -> 57
-        assert_eq!(compute_rrs(&m), 57);
+        assert_eq!(compute_rrs(&m), 50);
     }
 
     #[test]

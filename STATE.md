@@ -118,12 +118,12 @@ to bottom unless a dependency says otherwise.
 |---|---|
 | Rust crates | 3 |
 | Tests (`cargo test --all`) | 93 |
-| Backlog items (`B-NNN`) | 38 |
+| Backlog items (`B-NNN`) | 39 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 41 |
-| Decision records (`ADR-NNNN`) | 18 |
-| Markdown docs (tracked) | 39 |
-| Commits in history | 40 |
+| Durable lessons (`K-NNN`) | 42 |
+| Decision records (`ADR-NNNN`) | 19 |
+| Markdown docs (tracked) | 40 |
+| Commits in history | 41 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -218,3 +218,5 @@ to bottom unless a dependency says otherwise.
 - **B-037 (commit 39):** SARIF + JUnit report formats (K-040). Closed `B-037`.
 - **B-038 (commit 40):** end-to-end eval harness + `bench` + RRS regression gate
   (K-041). Closed `B-038`.
+- **B-039 (commit 41):** removed the unmeasured agent-deception axis (ADR-0019,
+  K-042). Closed `B-039`.

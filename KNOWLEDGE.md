@@ -130,6 +130,12 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-042 — Do not declare an RRS axis without a probe.** `AgentDeception` shipped
+as a weight-2.0 axis that nothing measured, implying a capability that did not
+exist; it was removed (ADR-0019). [Evidence: `crates/direa-core/src/rrs.rs`;
+`docs/RRS.md`] -> Every `Axis` must be produced by a probe, or be skipped by
+design; add the probe first. (ADR-0004, ADR-0019)
+
 **K-041 — `bench` is the end-to-end regression gate.** `die-a-rea bench [--check]`
 builds and scores every `bench/*/die-a-rea.toml` fixture (targets made absolute so
 `build`'s `relative_dest` resolves), and `--check` fails below `bench/expected.json`.

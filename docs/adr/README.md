@@ -34,5 +34,6 @@ file, id `ADR-NNNN`, never reused.
 | [ADR-0016](ADR-0016-bound-deceptive-decoys.md) | Deceptive decoys are opt-in, bounded, and gauntlet-validated | Accepted |
 | [ADR-0017](ADR-0017-control-flow-axis-is-external.md) | The control-flow axis requires an external decompiler | Accepted |
 | [ADR-0018](ADR-0018-native-guard-is-link-time.md) | The native guard is link-time, not post-build injection | Accepted |
+| [ADR-0019](ADR-0019-remove-agent-deception-axis.md) | Remove the unmeasured agent-deception axis | Accepted |
 
 Template: [0000-template.md](0000-template.md).
