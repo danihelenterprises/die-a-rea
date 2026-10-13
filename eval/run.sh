@@ -1,26 +1,30 @@
 #!/usr/bin/env bash
-# eval/run.sh — host entry point for the Docker OSS evaluation harness (B-052).
+# eval/run.sh — host entry point for the test bowl, the Docker OSS evaluation
+# harness (B-052). Prefer the top-level `./testbowl` launcher.
 #
-#   eval/run.sh                 # run every case
-#   eval/run.sh jq axios        # run selected cases
-#   eval/run.sh --list          # list case ids
+#   ./testbowl                  # run every case
+#   ./testbowl jq axios         # run selected cases
+#   ./testbowl --list           # list case ids
 #
-# Output is written to eval-out/ (gitignored) on the host: per-case logs,
+# Output is written to testbowl-out/ (gitignored) on the host: per-case logs,
 # before/after snapshots and the hardened artifacts, plus REPORT.md.
 set -Eeuo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd "$here/.." && pwd)"
-image="${DIREA_EVAL_IMAGE:-die-a-rea-eval}"
-out="${DIREA_EVAL_OUT:-$root/eval-out}"
+image="${TESTBOWL_IMAGE:-die-a-rea-testbowl}"
+out="${TESTBOWL_OUT:-$root/testbowl-out}"
 
 if [ "${1:-}" = "--list" ]; then
     for f in "$here"/repos/*.sh; do basename "$f" .sh; done
     exit 0
 fi
 
-echo "eval: building image $image (context: $root)"
+echo "testbowl: building image $image (context: $root)"
 docker build -f "$here/Dockerfile" -t "$image" "$root"
 mkdir -p "$out"
-echo "eval: running cases into $out"
-docker run --rm -v "$out:/eval-out" "$image" "$@"
+echo "testbowl: running cases into $out"
+# Run as the host user so testbowl-out/ stays owned by you (no sudo to clean up).
+docker run --rm --name die-a-rea-testbowl \
+    --user "$(id -u):$(id -g)" -e HOME=/tmp \
+    -v "$out:/testbowl-out" "$image" "$@"

@@ -1,10 +1,13 @@
-# OSS evaluation harness
+# The test bowl
 
-An **on-demand**, Docker-based harness that fetches pinned third-party release
-artifacts from real open-source projects across every ecosystem `die-a-rea`
-supports, runs `plan` / `build` / `verify` on them, and writes logs and the
-hardened artifacts to `eval-out/` so you can read both the error handling and
-the "die-a-rea'd" output.
+The **test bowl** is the on-demand, Docker-based OSS evaluation harness: it
+fetches pinned third-party release artifacts from real open-source projects
+across every ecosystem `die-a-rea` supports, runs `plan` / `build` / `verify` on
+them, and writes logs and the hardened artifacts to `testbowl-out/` so you can
+read both the error handling and the "die-a-rea'd" output.
+
+It lives in `eval/` (the source directory) and is launched with `./testbowl`
+(below); the Docker image is `die-a-rea-testbowl`.
 
 This is a development harness. It is the **only** place in the repository that
 uses network egress, and it never feeds anything back to the product;
@@ -15,14 +18,15 @@ target artifact (`build` is static; no `[verify]` command is configured).
 ## Usage
 
 ```bash
-eval/run.sh                 # every case
-eval/run.sh jq axios        # selected cases
-eval/run.sh --list          # list case ids
+./testbowl                  # every case
+./testbowl jq axios         # selected cases
+./testbowl --list           # list case ids
 ```
 
-Requires Docker. The first run builds the eval image (compiles the CLI release
-binary and installs Node + `javascript-obfuscator` + `@electron/asar`). Results
-land in `eval-out/` (gitignored).
+(Equivalent to `eval/run.sh …`, which `./testbowl` wraps.) Requires Docker. The
+first run builds the `die-a-rea-testbowl` image (compiles the CLI release binary
+and installs Node + `javascript-obfuscator` + `@electron/asar`). Results land in
+`testbowl-out/` (gitignored).
 
 ## Cases (pinned)
 
@@ -41,7 +45,7 @@ land in `eval-out/` (gitignored).
 ## Reading the output
 
 ```
-eval-out/
+testbowl-out/
   REPORT.md            # one table row per case + where to look
   summary.tsv          # machine-readable: id, ecosystem, detected, status, RRS, ...
   doctor.json          # what the image can do (adapters/tools)
@@ -58,7 +62,7 @@ eval-out/
   `error[code]: …` output. A case that fails unexpectedly is recorded with
   `status=build_failed` / `verify_failed` / `fetch_failed`, and the harness exits
   non-zero; a case with `EXPECT="fail"` is recorded as `known_gap` instead.
-- **The hardened code:** read `eval-out/<id>/out/<artifact>` (for `axios` it is
+- **The hardened code:** read `testbowl-out/<id>/out/<artifact>` (for `axios` it is
   plain text with the injected notice/canaries/decoys; for binaries diff
   `before/strings.txt` against `after/strings.txt`).
 

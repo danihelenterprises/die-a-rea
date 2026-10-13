@@ -33,7 +33,7 @@ Every tracked document, what it owns, and its role.
 | `docs/adr/0000-template.md` | ADR template | decisions |
 | `docs/adr/ADR-NNNN.md` | Individual immutable decisions | decisions |
 | `../docker/README.md` | Docker toolchain usage (runtime/dev images) | infra |
-| `../eval/README.md` | On-demand Docker OSS evaluation harness (B-052) | infra |
+| `../eval/README.md` | The test bowl: on-demand Docker OSS evaluation harness (B-052) | infra |
 | `docs/ADAPTERS.md` | Adapter discovery, reference adapters, CI lanes | design |
 | `docs/RUNTIME.md` | Embedding the runtime guard (JS + native) | design |
 | `docs/RELEASING.md` | Versioning, crates.io publish, binary releases, C ABI | infra |

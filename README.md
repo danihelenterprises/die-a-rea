@@ -365,9 +365,10 @@ cargo fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
 ```
 
-There is also an on-demand Docker harness that hardens pinned real-world
-open-source artifacts across every supported ecosystem and writes the logs and
-the hardened output for inspection: see [eval/README.md](eval/README.md).
+There is also **the test bowl** — an on-demand Docker harness (`./testbowl`) that
+hardens pinned real-world open-source artifacts across every supported ecosystem
+and writes the logs and the hardened output for inspection: see
+[eval/README.md](eval/README.md).
 
 ## Contributing
 

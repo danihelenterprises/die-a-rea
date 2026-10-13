@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# eval/entrypoint.sh — on-demand OSS evaluation harness (runs inside the eval image).
+# eval/entrypoint.sh — the test bowl: on-demand OSS evaluation harness (B-052),
+# runs inside the die-a-rea-testbowl image.
 #
-# For each case in /eval-repos it fetches a pinned third-party artifact, runs
+# For each case in /testbowl-repos it fetches a pinned third-party artifact, runs
 # `die-a-rea plan/build/verify`, snapshots the artifact before/after, and writes
-# per-case logs plus a combined REPORT.md under /eval-out.
+# per-case logs plus a combined REPORT.md under /testbowl-out.
 #
 # This is a *development* harness: it is the only place network access is used.
 # die-a-rea itself remains local-only (ADR-0001); the harness never feeds an
 # artifact back to the product over the network.
 set -uo pipefail
 
-OUT="${EVAL_OUT:-/eval-out}"
-REPOS_DIR="${EVAL_REPOS:-/eval-repos}"
+OUT="${TESTBOWL_OUT:-/testbowl-out}"
+REPOS_DIR="${TESTBOWL_REPOS:-/testbowl-repos}"
 SUMMARY="$OUT/summary.tsv"
 LOG="$OUT/harness.log"
 mkdir -p "$OUT"
@@ -193,7 +194,7 @@ write_report() {
                 "$id" "$eco" "$det" "$st" "${rrs:--}" "${gr:--}" "$bi" "$bo"
         done
         echo
-        echo "Per-case logs and artifacts live in \`eval-out/<id>/\`:"
+        echo "Per-case logs and artifacts live in \`testbowl-out/<id>/\`:"
         echo "\`run.log\` (full command output, incl. errors), \`before/\` and"
         echo "\`after/\` snapshots (\`strings.txt\`, \`nm.txt\`, \`sections.txt\`), and"
         echo "\`out/\` (the hardened artifact, readable). \`report.md\` summarises the case."

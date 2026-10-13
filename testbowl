@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# testbowl — launcher for the test bowl: the Docker OSS evaluation harness (B-052).
+#
+#   ./testbowl                  # run every case
+#   ./testbowl jq axios         # run selected cases
+#   ./testbowl --list           # list case ids
+#
+# Fetches pinned real-world open-source artifacts across every ecosystem
+# die-a-rea supports and hardens them, writing logs and readable output to
+# testbowl-out/. Network is confined to this on-demand harness (ADR-0021) and
+# the target artifacts are never executed. See eval/README.md.
+set -Eeuo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$here/eval/run.sh" "$@"

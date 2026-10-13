@@ -242,3 +242,6 @@ counted here (one fact, one home).
   with ADR-0021 confining network to the harness and K-046. Closed `B-052`. The
   first run surfaced `B-053` (Go/.NET misdetection past the 4 KiB sniff window;
   High) and `B-054` (`java-script` kind naming).
+- **Test bowl naming:** the harness is branded **the test bowl** — image
+  `die-a-rea-testbowl`, launcher `./testbowl`, output `testbowl-out/`; the source
+  stays in `eval/` (so ADR-0021/K-046 remain accurate). No behaviour change.

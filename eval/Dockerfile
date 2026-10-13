@@ -1,13 +1,14 @@
 # syntax=docker/dockerfile:1
 #
-# On-demand OSS evaluation image (B-052).
+# The test bowl — on-demand OSS evaluation image (B-052).
 #
 # Fetches pinned third-party release artifacts across every ecosystem die-a-rea
 # supports, runs plan/build/verify on them, and writes logs + hardened artifacts
-# to a mounted /eval-out. Build context is the repository root:
+# to a mounted /testbowl-out. Prefer the top-level `./testbowl` launcher. To build
+# and run directly from the repository root:
 #
-#   docker build -f eval/Dockerfile -t die-a-rea-eval .
-#   docker run --rm -v "$PWD/eval-out:/eval-out" die-a-rea-eval all
+#   docker build -f eval/Dockerfile -t die-a-rea-testbowl .
+#   docker run --rm -v "$PWD/testbowl-out:/testbowl-out" die-a-rea-testbowl all
 
 # ── build: compile the CLI ───────────────────────────────────────────────────
 FROM rust:bookworm AS build
@@ -31,9 +32,9 @@ RUN chmod +x /opt/die-a-rea/adapters/js/direa-js \
  && ln -sf /opt/die-a-rea/adapters/js/direa-js /usr/local/bin/direa-js
 ENV DIREA_JS_ADAPTER=/opt/die-a-rea/adapters/js/direa-js
 
-COPY eval/entrypoint.sh /usr/local/bin/run-eval
-COPY eval/repos /eval-repos
-RUN chmod +x /usr/local/bin/run-eval
-WORKDIR /eval
-ENTRYPOINT ["/usr/local/bin/run-eval"]
+COPY eval/entrypoint.sh /usr/local/bin/run-testbowl
+COPY eval/repos /testbowl-repos
+RUN chmod +x /usr/local/bin/run-testbowl
+WORKDIR /testbowl
+ENTRYPOINT ["/usr/local/bin/run-testbowl"]
 CMD ["all"]

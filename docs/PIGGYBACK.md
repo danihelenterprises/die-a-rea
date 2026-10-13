@@ -97,8 +97,9 @@ highest-value, lowest-effort adapter.
 
 ## Evaluation test artifacts (inputs only)
 
-The [`eval/`](../eval/README.md) harness downloads pinned third-party artifacts to
-test `die-a-rea` on real code (B-052). They are **inputs only** — never linked,
+The test bowl (the [`eval/`](../eval/README.md) harness) downloads pinned
+third-party artifacts to test `die-a-rea` on real code (B-052). They are **inputs
+only** — never linked,
 bundled or redistributed; they land in the gitignored `eval-out/`. GPL artifacts
 (e.g. the Termux APK) are read byte-for-byte and never executed (ADR-0021,
 ADR-0007).
