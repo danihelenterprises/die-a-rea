@@ -125,10 +125,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 124 |
+| Tests (`cargo test --all`) | 132 |
 | Backlog items (`B-NNN`) | 59 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 57 |
+| Durable lessons (`K-NNN`) | 58 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -298,3 +298,8 @@ counted here (one fact, one home).
   binary), .NET (`bin`/`publish` assemblies), Android (`build/outputs/apk/*.apk`)
   and C/C++ (CMake/Make/meson `build/` linked binary, objects skipped), with
   budget-bounded recursive scans and deduped results. Closed `B-049`.
+- **B-056 (K-058):** `direa_core::dex` parses DEX structurally (header →
+  class_defs → class_data → code_items) and reports `debug_info_off`/
+  `source_file_idx`; the `debug-info` probe is DEX-aware for standalone `.dex`
+  and APK `classes*.dex` members (`jar::entries_with_ext`). Measurement only;
+  DEX stripping stays B-042. Closed `B-056`.

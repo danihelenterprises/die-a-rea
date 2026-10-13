@@ -192,6 +192,16 @@ fn debug_metadata(bytes: &[u8]) -> Option<&'static str> {
     {
         return Some("JVM debug attributes (jar)");
     }
+    if direa_core::dex::measure_debug_info(bytes).is_some_and(|r| r.has_debug_info()) {
+        return Some("DEX debug info");
+    }
+    if bytes.starts_with(b"PK\x03\x04")
+        && direa_core::jar::entries_with_ext(bytes, "dex")
+            .iter()
+            .any(|d| direa_core::dex::measure_debug_info(d).is_some_and(|r| r.has_debug_info()))
+    {
+        return Some("DEX debug info (apk)");
+    }
     if bytes.starts_with(b"\0asm") && !direa_core::wasm::custom_section_names(bytes).is_empty() {
         return Some("WASM custom section");
     }
@@ -503,6 +513,51 @@ mod tests {
         out.extend_from_slice(&cd_off.to_le_bytes());
         out.extend_from_slice(&0u16.to_le_bytes());
         out
+    }
+
+    /// A minimal DEX with one class and one method; `debug` sets the method's
+    /// `debug_info_off` (source_file_idx is NO_INDEX).
+    fn dex_bytes(debug: bool) -> Vec<u8> {
+        let mut d = vec![0u8; 192];
+        d[0..8].copy_from_slice(b"dex\n035\0");
+        let put =
+            |d: &mut [u8], off: usize, v: u32| d[off..off + 4].copy_from_slice(&v.to_le_bytes());
+        let len = d.len() as u32;
+        put(&mut d, 32, len);
+        put(&mut d, 36, 112);
+        put(&mut d, 96, 1); // class_defs_size
+        put(&mut d, 100, 112); // class_defs_off
+        put(&mut d, 112 + 16, 0xFFFF_FFFF); // source_file_idx = NO_INDEX
+        put(&mut d, 112 + 24, 144); // class_data_off
+        d[146] = 1; // direct_methods_size
+        d[148] = 0; // method_idx_diff
+        d[149] = 1; // access_flags
+        d[150] = 0xB0; // code_off = 176 (uleb)
+        d[151] = 0x01;
+        put(&mut d, 176 + 8, if debug { 1 } else { 0 }); // debug_info_off
+        d
+    }
+
+    #[test]
+    fn dex_debug_info_is_measured() {
+        let p = temp_file("dbg.dex", &dex_bytes(true));
+        assert_eq!(DebugInfoProbe.measure(&p).unwrap().raw, 1.0);
+        let p2 = temp_file("dbg-nodbg.dex", &dex_bytes(false));
+        assert_eq!(DebugInfoProbe.measure(&p2).unwrap().raw, 0.0);
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_file(p2);
+    }
+
+    #[test]
+    fn apk_dex_debug_info_is_measured() {
+        let apk = stored_zip(b"classes.dex", &dex_bytes(true));
+        let p = temp_file("dbg.apk", &apk);
+        assert_eq!(DebugInfoProbe.measure(&p).unwrap().raw, 1.0);
+        let apk_clean = stored_zip(b"classes.dex", &dex_bytes(false));
+        let p2 = temp_file("dbg-clean.apk", &apk_clean);
+        assert_eq!(DebugInfoProbe.measure(&p2).unwrap().raw, 0.0);
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_file(p2);
     }
 
     #[test]

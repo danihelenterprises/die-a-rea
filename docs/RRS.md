@@ -100,5 +100,6 @@ debug-only attributes (`SourceFile`, `LineNumberTable`, ...) and WASM custom
 sections (the `name`/`producers` sections), so the built-in `java-post` and
 `wasm-post` transforms are measured rather than silently skipped (B-047). For a
 `.jar` it reads the `.class` members inside the archive, since the raw archive is
-compressed (B-058, K-057). DEX debug info is not yet measured (a DEX parser is
-needed).
+compressed (B-058, K-057). DEX debug info is pointer-based (no byte marker), so
+it is measured structurally for `.dex` and APK `classes*.dex` members (B-056,
+K-058); stripping DEX debug info is still open (B-042).

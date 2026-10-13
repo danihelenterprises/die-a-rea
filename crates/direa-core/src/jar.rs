@@ -365,6 +365,30 @@ pub fn class_entries(data: &[u8]) -> Vec<Vec<u8>> {
     out
 }
 
+/// Decompressed bytes of every entry whose name ends with `.{ext}` (case-
+/// insensitive). Best-effort: an unsupported archive yields an empty vector.
+/// Used to reach members of other containers (e.g. `classes*.dex` in an APK).
+pub fn entries_with_ext(data: &[u8], ext: &str) -> Vec<Vec<u8>> {
+    let Some(entries) = read_central(data) else {
+        return Vec::new();
+    };
+    let suffix = format!(".{}", ext.to_ascii_lowercase());
+    let mut out = Vec::new();
+    for e in &entries {
+        if String::from_utf8_lossy(&e.name)
+            .to_ascii_lowercase()
+            .ends_with(&suffix)
+        {
+            if let Some(raw) = compressed(data, e) {
+                if let Some(bytes) = decompress(e, raw) {
+                    out.push(bytes);
+                }
+            }
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -512,5 +536,20 @@ mod tests {
         assert!(!rep.changed);
         assert_eq!(out, data);
         assert!(class_entries(data).is_empty());
+    }
+
+    #[test]
+    fn extracts_entries_by_extension() {
+        let archive = build_zip(
+            &[
+                ("classes.dex", b"dex\n035\0payload"),
+                ("META-INF/MANIFEST.MF", b"Manifest-Version: 1.0\n"),
+            ],
+            true,
+        );
+        let dexes = entries_with_ext(&archive, "dex");
+        assert_eq!(dexes.len(), 1);
+        assert_eq!(dexes[0], b"dex\n035\0payload");
+        assert!(entries_with_ext(&archive, "class").is_empty());
     }
 }

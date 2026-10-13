@@ -496,3 +496,19 @@ the win (K-050/K-056 spirit). [Evidence: `crates/direa-core/src/jar.rs` (tests
 (`debug_metadata`, test `jar_debug_attributes_are_measured`); bench `java-jar`]
 -> Container edits are structural (K-056); a probe for a container transform
 must read the container's members. (B-058)
+
+**K-058 — DEX debug info has no byte marker; measure it structurally.** DEX
+stores debug data as pointers, not literal names: each method's
+`code_item.debug_info_off` and each `class_def_item.source_file_idx` (both often
+zero/`NO_INDEX` when absent), so a marker-scanning probe cannot see it. The
+`debug-metadata-exposure` axis walks the structure instead —
+`direa_core::dex::measure_debug_info` reads header → `class_defs` → `class_data`
+→ `code_item`s and counts non-zero debug offsets / real source-file indices;
+non-DEX or truncated input returns `None` (skipped, K-004). A container member
+(APK `classes*.dex`) is reached through the zip reader. [Evidence:
+`crates/direa-core/src/dex.rs` (tests `measures_method_debug_info`,
+`truncated_dex_is_none`); `crates/direa-verify/src/probes.rs` (`debug_metadata`,
+tests `dex_debug_info_is_measured`, `apk_dex_debug_info_is_measured`);
+`crates/direa-core/src/jar.rs` (`entries_with_ext`)] -> Pointer-based metadata
+needs a parser, not a marker scan; parsing is measurement, stripping is a later
+transform (B-042). (B-056)
