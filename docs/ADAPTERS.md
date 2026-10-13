@@ -26,8 +26,9 @@ resolves the executable from:
 | `wasm` | `adapters/wasm/direa-wasm` | `wasm-opt`/`wasm-mutate` (Binaryen) | `DIREA_WASM_ADAPTER`, `DIREA_WASM_COMMAND` |
 
 The `jvm` adapter is registered for Android APK, Java `.class` and Java `.jar`
-targets; the built-in `java-post` still runs first on `.class` files (a `.jar` is
-copied verbatim and handed to the adapter).
+targets; the built-in `java-post` runs first on `.class` files, and a `.jar` is
+unpacked, hardened per `.class` and repacked before the archive is handed to the
+adapter (B-058).
 
 `DIREA_LLVM_BUILD` / `DIREA_CLR_COMMAND` / `DIREA_JVM_COMMAND` /
 `DIREA_GO_COMMAND` / `DIREA_WASM_COMMAND` are shell commands with `{artifact}`

@@ -89,7 +89,7 @@ no extra toolchain; **adapters** add deeper protection and are bring-your-own
 | JavaScript | `.js` / `.mjs` / `.cjs`, bundles | source-map + comment strip, notice/canary, decoys, runtime guard | `direa-js` (javascript-obfuscator) |
 | Electron | app directory, `.asar` | app dir: as JS/tree; `.asar`: embedded JS hardened and repacked | `direa-js` (+ asarmor / bytenode) |
 | .NET (C#/F#/VB) | PE assemblies (`.dll`/`.exe`) | COFF symbol table, debug dir, Rich header | `direa-clr` (ConfuserEx) |
-| Java / Kotlin / Scala | `.class`, `.jar` | `.class`: debug-attribute strip; `.jar`: copied (needs an adapter) | `direa-jvm` (R8 / ProGuard) |
+| Java / Kotlin / Scala | `.class`, `.jar` | `.class`: debug-attribute strip; `.jar`: unpack, strip each `.class`, repack | `direa-jvm` (R8 / ProGuard) |
 | Android | `.apk` | detection + verification | `direa-jvm` (R8) |
 | WebAssembly | `.wasm` | custom-section strip (name, producers) | `direa-wasm` (wasm-opt / wasm-mutate) |
 | Any other | any file/dir | structural checks + RRS measurement | — (write one: [docs/ADAPTERS.md](docs/ADAPTERS.md)) |
@@ -324,7 +324,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 - Target detection (ELF, Mach-O, PE, .NET, Go, JS, Electron/ASAR, WASM, APK).
 - Planning with an adapter registry and missing-adapter reporting.
 - Safe hardening: source-map removal, comment stripping, notice/canary injection.
-- Built-in, toolchain-free post: `native-post` for ELF/PE/Mach-O (incl. Go build-info), `wasm-post` (custom sections) and `java-post` (debug attributes) (ADR-0008, K-019, K-036).
+- Built-in, toolchain-free post: `native-post` for ELF/PE/Mach-O (incl. Go build-info), `wasm-post` (custom sections), `java-post` (debug attributes) and a `.jar` unpack/harden/repack (ADR-0008, K-019, K-036, K-057).
 - External adapters discovered via `DIREA_<ID>_ADAPTER` or `PATH`: `direa-js` (javascript-obfuscator), `direa-llvm` (Pluto/O-MVLL), `direa-clr` (.NET/ConfuserEx), `direa-jvm` (R8/ProGuard), `direa-go` (garble) and `direa-wasm` (wasm-opt/wasm-mutate); toolchains are bring-your-own (ADR-0009, K-027).
 - Runtime guard: `direa_core::guard` detects debuggers/Frida/inspectors; `verify --with-runtime` scores it, `build` embeds a behavior-safe JS guard when `anti_instrumentation` is set, and `runtime/guard/` is a linkable native C guard (ADR-0014, ADR-0018).
 - Agent-defense gauntlet: `die-a-rea canary-selftest [--detector CMD]` normalizes input (HTML entities, homoglyphs, invisible characters, whitespace), runs the prompt-injection detector (built-in and optional external) over an adversarial + red-team evasion corpus and our own payloads, and fails if any sample is missed (ADR-0006, ADR-0020).
@@ -335,7 +335,7 @@ An early scaffold focused on architecture and the measurement loop. Implemented 
 
 **Roadmap**
 
-- Deeper built-in transforms: Electron `.asar` unpack/repack and Android DEX.
+- Deeper built-in transforms: Android DEX hardening and APK repack.
 - An optional benchmark lane that runs a real REA adversary inside the RRS gate.
 - More cross-ecosystem probes (e.g. DEX debug info).
 

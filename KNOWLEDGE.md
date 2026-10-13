@@ -482,3 +482,17 @@ tests `hardens_embedded_js_and_repacks`, `drops_integrity_field`;
 `crates/direa-cli/src/build.rs` `ElectronAsar` arm, verified with a real
 `asar extract`] -> Container formats need a reader/writer, not an append. (B-043,
 B-055)
+
+**K-057 — A `.jar` is a ZIP; rewriting it needs a reader/writer, and its
+measurement must look inside.** `direa_core::jar` walks the central directory,
+inflates each `.class` entry (raw DEFLATE via the pure-Rust `flate2`), runs
+`java-post`, and repacks with fresh local headers, CRCs and central-directory
+offsets; ZIP64, encrypted or exotic-method archives fall back to a verbatim
+copy. Because the bytes on disk are compressed, `debug-info` must decompress the
+`.class` members (`jar::class_entries`) — counting markers on the raw jar hides
+the win (K-050/K-056 spirit). [Evidence: `crates/direa-core/src/jar.rs` (tests
+`hardens_deflated_classes_and_repacks`, `stored_classes_are_handled`,
+`malformed_archive_is_untouched`); `crates/direa-verify/src/probes.rs`
+(`debug_metadata`, test `jar_debug_attributes_are_measured`); bench `java-jar`]
+-> Container edits are structural (K-056); a probe for a container transform
+must read the container's members. (B-058)

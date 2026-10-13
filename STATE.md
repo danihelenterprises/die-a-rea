@@ -81,7 +81,7 @@ to bottom unless a dependency says otherwise.
 ## What works end-to-end today (verified)
 
 - `cargo build` — clean.
-- `cargo test --all` — 37 tests pass.
+- `cargo test --all` — all tests pass (see the counters table).
 - `die-a-rea init --name X <target>` writes a starter manifest.
 - `die-a-rea plan` / `plan --json` lists per-target adapters and missing ones.
 - `die-a-rea build --out DIR [--seed N]` hardens JS/tree targets, injects seeded
@@ -93,6 +93,10 @@ to bottom unless a dependency says otherwise.
 - `die-a-rea build` on a JS target runs the external `js` adapter when
   `DIREA_JS_ADAPTER` or `direa-js` is available (ADR-0009); e.g. a bundle
   obfuscated by `javascript-obfuscator`. Absence is a note, not an error.
+- `die-a-rea build` on a `.jar` unpacks the zip in-process, runs the built-in
+  `java-post` on each `.class`, and repacks it; the `debug-info` axis is
+  jar-aware, so the win is measured (B-058, K-057). An archive the rewriter
+  cannot parse is copied and deferred to the `jvm` adapter.
 - `die-a-rea verify --original A --hardened B` prints an RRS report; `--json`
   for CI; `--with-rea` runs the external adversary when available; `--with-runtime`
   adds the runtime-instrumentation axis (debugger/Frida/inspector detection). The
@@ -121,10 +125,10 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 110 |
+| Tests (`cargo test --all`) | 116 |
 | Backlog items (`B-NNN`) | 58 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 56 |
+| Durable lessons (`K-NNN`) | 57 |
 | Decision records (`ADR-NNNN`) | 21 |
 | Markdown docs (tracked) | 44 |
 
@@ -277,3 +281,8 @@ counted here (one fact, one home).
   archive; the `.asar` build arm now hardens instead of copying, with a copy
   fallback for unparseable archives. Bench `electron-asar` rose 0 → 35; verified
   with a real `asar extract`. Closed `B-055`.
+- **B-058 (K-057):** `direa_core::jar` unpacks a `.jar` (ZIP), runs `java-post`
+  on each `.class`, and repacks with fresh local headers/CRCs/offsets; the build
+  arm falls back to a verbatim copy for archives it cannot rewrite (ZIP64,
+  encryption, exotic methods). The `debug-info` probe is jar-aware and bench
+  `java-jar` was added. Closed `B-058`.

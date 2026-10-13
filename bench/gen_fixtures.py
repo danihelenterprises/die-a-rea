@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Materialize the synthetic native bench fixtures (PE, Mach-O).
+"""Materialize the synthetic native bench fixtures (PE, Mach-O, jar).
 
 These mirror the minimal fixtures used by `native_post`'s unit tests: a PE32+
 with a COFF symbol table, a debug directory and a `.pdb` path, and a thin 64-bit
 Mach-O with a `__DWARF` segment. They are synthetic so the bench stays
-toolchain-free; `bench/generate.sh` skips them when Python is unavailable.
+toolchain-free; `bench/generate.sh` skips them when Python is unavailable. The
+`.jar` fixture is a real deflated zip with a `.class` carrying debug attributes,
+so the built-in unpack/harden/repack (B-058) is exercised.
 """
 
+import io
 import json
 import struct
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -101,13 +105,26 @@ def asar_fixture() -> bytes:
     return bytes(out)
 
 
+def jar_fixture() -> bytes:
+    """A real deflated jar with a `.class` carrying a debug attribute name."""
+    cls = bytearray([0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x34])
+    cls += struct.pack(">H", 2)  # constant_pool_count = 2
+    cls += b"\x01" + struct.pack(">H", 10) + b"SourceFile"
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\r\n\r\n")
+        z.writestr("App.class", bytes(cls))
+    return out.getvalue()
+
+
 def main() -> None:
-    for d in ("native-pe", "native-macho", "electron-asar"):
+    for d in ("native-pe", "native-macho", "electron-asar", "java-jar"):
         (ROOT / d).mkdir(exist_ok=True)
     (ROOT / "native-pe" / "app.exe").write_bytes(pe_fixture())
     (ROOT / "native-macho" / "app").write_bytes(macho_fixture())
     (ROOT / "electron-asar" / "app.asar").write_bytes(asar_fixture())
-    print("synthetic native/asar fixtures ready (PE, Mach-O, asar)")
+    (ROOT / "java-jar" / "app.jar").write_bytes(jar_fixture())
+    print("synthetic native/asar/jar fixtures ready (PE, Mach-O, asar, jar)")
 
 
 if __name__ == "__main__":

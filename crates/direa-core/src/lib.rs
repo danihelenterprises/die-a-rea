@@ -13,6 +13,7 @@ pub mod canary;
 pub mod discover;
 pub mod error;
 pub mod guard;
+pub mod jar;
 pub mod java;
 pub mod manifest;
 pub mod native_post;

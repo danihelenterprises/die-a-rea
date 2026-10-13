@@ -273,18 +273,39 @@ pub fn build(
                 }
             }
             TargetKind::JavaJar => {
-                // A `.jar` is a zip container; the built-in `java-post` works on
-                // `.class` files, not archives. Copy it verbatim and defer to an
-                // external shrinker (the `jvm` adapter: R8/ProGuard). Built-in
-                // jar unpack/harden/repack is not implemented.
-                actions.push(
-                    "copy .jar archive verbatim (use the jvm adapter for R8/ProGuard)".into(),
-                );
-                if !dry_run {
+                // A `.jar` is a zip container: unpack it in-process, run the
+                // built-in `java-post` on each `.class`, and repack with fresh
+                // offsets (B-058). An archive the rewriter cannot parse (ZIP64,
+                // encryption, an exotic method) is copied verbatim and deferred
+                // to an external shrinker (the `jvm` adapter: R8/ProGuard).
+                if dry_run {
+                    actions.push("jar: rewrite embedded .class debug attributes".into());
+                } else {
                     ensure_parent(&dest)?;
-                    std::fs::copy(src, &dest).with_context(|| {
-                        format!("copying {} to {}", src.display(), dest.display())
-                    })?;
+                    let data =
+                        std::fs::read(src).with_context(|| format!("reading {}", src.display()))?;
+                    let (new_data, rep) = direa_core::jar::harden_archive(&data, &|bytes| {
+                        let mut v = bytes.to_vec();
+                        direa_core::java::strip_debug_attributes(&mut v);
+                        v
+                    });
+                    std::fs::write(&dest, &new_data)
+                        .with_context(|| format!("writing {}", dest.display()))?;
+                    if rep.changed {
+                        actions.push(format!(
+                            "jar: rewrote {} of {} embedded .class file(s)",
+                            rep.classes_hardened, rep.classes_total
+                        ));
+                        result.notes.push(format!(
+                            "jar: hardened {} .class file(s), {} file(s) total",
+                            rep.classes_hardened, rep.files_total
+                        ));
+                    } else {
+                        actions.push(
+                            "copy .jar archive verbatim (not a parseable jar; use the jvm adapter)"
+                                .into(),
+                        );
+                    }
                     apply_external_adapters(&dest, &policy, kind, &mut actions, &mut result.notes);
                 }
             }
@@ -1378,6 +1399,103 @@ printf '{"adapter":"js","status":"ok","steps":[{"adapter":"js","action":"obfusca
         assert_eq!(res.targets[0].kind, "java-jar");
         assert!(res.targets[0].actions.iter().any(|a| a.contains("jar")));
         assert!(out.join("app.jar").exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Build a minimal ZIP with one stored entry (CRC unchecked by readers here).
+    fn stored_jar(name: &[u8], data: &[u8]) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.extend_from_slice(b"PK\x03\x04");
+        out.extend_from_slice(&20u16.to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(name);
+        out.extend_from_slice(data);
+
+        let cd_off = out.len() as u32;
+        let mut cd = Vec::new();
+        cd.extend_from_slice(b"PK\x01\x02");
+        cd.extend_from_slice(&20u16.to_le_bytes());
+        cd.extend_from_slice(&20u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u32.to_le_bytes());
+        cd.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        cd.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        cd.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u32.to_le_bytes());
+        cd.extend_from_slice(&0u32.to_le_bytes());
+        cd.extend_from_slice(name);
+        let cd_size = cd.len() as u32;
+        out.extend_from_slice(&cd);
+
+        out.extend_from_slice(b"PK\x05\x06");
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(&1u16.to_le_bytes());
+        out.extend_from_slice(&1u16.to_le_bytes());
+        out.extend_from_slice(&cd_size.to_le_bytes());
+        out.extend_from_slice(&cd_off.to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out
+    }
+
+    #[test]
+    fn valid_jar_is_hardened_in_place() {
+        // A parseable jar with a `.class` carrying a debug attribute name must
+        // be unpacked, hardened by `java-post` and repacked (B-058).
+        let mut class = vec![0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x34];
+        class.extend_from_slice(&2u16.to_be_bytes());
+        class.push(0x01);
+        class.extend_from_slice(&10u16.to_be_bytes());
+        class.extend_from_slice(b"SourceFile");
+        let jar = stored_jar(b"App.class", &class);
+
+        let dir = std::env::temp_dir().join(format!("direa-jar-valid-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("app.jar");
+        std::fs::write(&src, &jar).unwrap();
+
+        let manifest = Manifest {
+            targets: vec![direa_core::TargetSpec {
+                path: src.clone(),
+                kind: None,
+                adapters: vec![],
+            }],
+            ..Default::default()
+        };
+        let out = dir.join("out");
+        let res = build(&manifest, &out, false, Some(1), false).unwrap();
+        assert!(
+            res.targets[0]
+                .actions
+                .iter()
+                .any(|a| a.contains("jar: rewrote")),
+            "a parseable jar must take the rewrite path: {:?}",
+            res.targets[0].actions
+        );
+        let hardened = std::fs::read(out.join("app.jar")).unwrap();
+        let classes = direa_core::jar::class_entries(&hardened);
+        assert_eq!(classes.len(), 1);
+        assert!(
+            !classes[0].windows(10).any(|w| w == b"SourceFile"),
+            "embedded class debug attribute must be stripped"
+        );
+        assert_ne!(hardened, jar, "archive must be rewritten");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

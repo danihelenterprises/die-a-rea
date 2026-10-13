@@ -182,6 +182,16 @@ fn debug_metadata(bytes: &[u8]) -> Option<&'static str> {
     {
         return Some("JVM debug attributes");
     }
+    if bytes.starts_with(b"PK\x03\x04")
+        && direa_core::jar::class_entries(bytes).iter().any(|c| {
+            c.starts_with(&[0xCA, 0xFE, 0xBA, 0xBE])
+                && JVM_DEBUG_MARKERS
+                    .iter()
+                    .any(|m| count_occurrences(c, m) > 0)
+        })
+    {
+        return Some("JVM debug attributes (jar)");
+    }
     if bytes.starts_with(b"\0asm") && !direa_core::wasm::custom_section_names(bytes).is_empty() {
         return Some("WASM custom section");
     }
@@ -412,6 +422,87 @@ mod tests {
         );
         let _ = std::fs::remove_file(p);
         let _ = std::fs::remove_file(p2);
+    }
+
+    #[test]
+    fn jar_debug_attributes_are_measured() {
+        // A stored-entry jar whose `.class` carries a debug attribute name.
+        let mut class = vec![0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x34];
+        class.extend_from_slice(&2u16.to_be_bytes());
+        class.push(0x01);
+        class.extend_from_slice(&10u16.to_be_bytes());
+        class.extend_from_slice(b"SourceFile");
+        let jar = stored_zip(b"App.class", &class);
+
+        let p = temp_file("dbg.jar", &jar);
+        assert_eq!(DebugInfoProbe.measure(&p).unwrap().raw, 1.0);
+
+        let (stripped, _) = direa_core::jar::harden_archive(&jar, &|bytes| {
+            let mut v = bytes.to_vec();
+            direa_core::java::strip_debug_attributes(&mut v);
+            v
+        });
+        let p2 = temp_file("dbg-stripped.jar", &stripped);
+        assert_eq!(
+            DebugInfoProbe.measure(&p2).unwrap().raw,
+            0.0,
+            "jar rewriting must make the debug axis measurable and clear"
+        );
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_file(p2);
+    }
+
+    /// A minimal ZIP with one *stored* (uncompressed) entry. The probe never
+    /// validates the CRC, so it is written as zero.
+    fn stored_zip(name: &[u8], data: &[u8]) -> Vec<u8> {
+        let mut out = Vec::new();
+        let local_off = 0u32;
+        out.extend_from_slice(b"PK\x03\x04");
+        out.extend_from_slice(&20u16.to_le_bytes()); // version needed
+        out.extend_from_slice(&0u16.to_le_bytes()); // flags
+        out.extend_from_slice(&0u16.to_le_bytes()); // method: store
+        out.extend_from_slice(&0u16.to_le_bytes()); // time
+        out.extend_from_slice(&0u16.to_le_bytes()); // date
+        out.extend_from_slice(&0u32.to_le_bytes()); // crc (unchecked)
+        out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(name);
+        out.extend_from_slice(data);
+
+        let cd_off = out.len() as u32;
+        let mut cd = Vec::new();
+        cd.extend_from_slice(b"PK\x01\x02");
+        cd.extend_from_slice(&20u16.to_le_bytes());
+        cd.extend_from_slice(&20u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes());
+        cd.extend_from_slice(&0u32.to_le_bytes());
+        cd.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        cd.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        cd.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        cd.extend_from_slice(&0u16.to_le_bytes()); // extra len
+        cd.extend_from_slice(&0u16.to_le_bytes()); // comment len
+        cd.extend_from_slice(&0u16.to_le_bytes()); // disk start
+        cd.extend_from_slice(&0u16.to_le_bytes()); // internal attrs
+        cd.extend_from_slice(&0u32.to_le_bytes()); // external attrs
+        cd.extend_from_slice(&local_off.to_le_bytes());
+        cd.extend_from_slice(name);
+        let cd_size = cd.len() as u32;
+        out.extend_from_slice(&cd);
+
+        out.extend_from_slice(b"PK\x05\x06");
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(&1u16.to_le_bytes());
+        out.extend_from_slice(&1u16.to_le_bytes());
+        out.extend_from_slice(&cd_size.to_le_bytes());
+        out.extend_from_slice(&cd_off.to_le_bytes());
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out
     }
 
     #[test]

@@ -98,5 +98,7 @@ see lesson K-012.
 The `debug-metadata-exposure` probe is format-aware: it also detects JVM
 debug-only attributes (`SourceFile`, `LineNumberTable`, ...) and WASM custom
 sections (the `name`/`producers` sections), so the built-in `java-post` and
-`wasm-post` transforms are measured rather than silently skipped (B-047). DEX
-debug info is not yet measured (a DEX parser is needed).
+`wasm-post` transforms are measured rather than silently skipped (B-047). For a
+`.jar` it reads the `.class` members inside the archive, since the raw archive is
+compressed (B-058, K-057). DEX debug info is not yet measured (a DEX parser is
+needed).

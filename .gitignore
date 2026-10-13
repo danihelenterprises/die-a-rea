@@ -13,6 +13,7 @@ bench/go/app
 bench/dotnet/App.dll
 bench/electron-asar/app.asar
 bench/android-apk/app.apk
+bench/java-jar/app.jar
 
 # The test bowl output (see eval/README.md).
 testbowl-out/

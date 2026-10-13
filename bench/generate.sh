@@ -10,7 +10,7 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p "$root/wasm-module" "$root/java-class" "$root/native-elf" \
     "$root/native-pe" "$root/native-macho" "$root/go" "$root/dotnet" \
-    "$root/electron-asar" "$root/android-apk"
+    "$root/electron-asar" "$root/android-apk" "$root/java-jar"
 
 # WASM: magic + one custom "name" section (id 0, size 8, name len 4 + "name" + "abc").
 printf '\0asm\x01\0\0\0\x00\x08\x04nameabc' >"$root/wasm-module/mod.wasm"

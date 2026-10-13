@@ -8,6 +8,7 @@
   "native-macho": 55,
   "electron-asar": 30,
   "android-apk": 0,
+  "java-jar": 15,
   "go": 35,
   "dotnet": 18
 }

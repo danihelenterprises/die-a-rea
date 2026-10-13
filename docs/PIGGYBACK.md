@@ -15,6 +15,16 @@ why, and the license constraints.
 - **Never bundle:** commercial tools (VMProtect, Themida, Denuvo, DexGuard).
   Integrate only as user-provided, bring-your-own, like REA does with providers.
 
+## Rust crates linked into the MIT core
+
+Adapter toolchains are the only place copyleft/proprietary code is allowed, and
+then only behind a subprocess (ADR-0007). The core links permissively licensed
+crates only:
+
+| Crate | What it gives us | License |
+|---|---|---|
+| [flate2](https://github.com/rust-lang/flate2) (pure-Rust `miniz_oxide` backend) | raw DEFLATE for reading and writing the built-in `.jar` (ZIP) rewriter (K-057) | MIT OR Apache-2.0 |
+
 ## Native code (C/C++/Rust/Swift) — LLVM
 
 | Project | What it gives us | License |

@@ -1,0 +1,18 @@
+# Bench fixture: a Java `.jar` (deflated zip). The built-in jar rewriter
+# unpacks it, runs `java-post` on each `.class` and repacks it (B-058); a
+# non-parseable archive is copied instead of erroring.
+[project]
+name = "java-jar"
+version = "1.0.0"
+
+[policy]
+profile = "high"
+
+[randomization]
+enabled = false
+
+[tarpit]
+enabled = false
+
+[[targets]]
+path = "app.jar"
