@@ -5,6 +5,10 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Command-line interface for die-a-rea: init, plan, build and verify."
 
 [[bin]]
@@ -12,8 +16,8 @@ name = "die-a-rea"
 path = "src/main.rs"
 
 [dependencies]
-direa-core = { path = "../direa-core" }
-direa-verify = { path = "../direa-verify" }
+direa-core = { path = "../direa-core", version = "0.1.0" }
+direa-verify = { path = "../direa-verify", version = "0.1.0" }
 clap.workspace = true
 anyhow.workspace = true
 serde.workspace = true

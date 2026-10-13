@@ -4,6 +4,7 @@ members = [
     "crates/direa-core",
     "crates/direa-cli",
     "crates/direa-verify",
+    "crates/direa-ffi",
 ]
 
 [workspace.package]
@@ -11,7 +12,11 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.79"
 license = "MIT"
-repository = "https://github.com/die-a-rea/die-a-rea"
+repository = "https://github.com/danihelenterprises/die-a-rea"
+homepage = "https://github.com/danihelenterprises/die-a-rea"
+readme = "README.md"
+keywords = ["obfuscation", "reverse-engineering", "security", "hardening"]
+categories = ["development-tools", "command-line-utilities"]
 authors = ["die-a-rea contributors"]
 description = "Defense-in-depth hardening and measured reverse-engineering resistance against automated and LLM-driven analysis (REA and friends)."
 

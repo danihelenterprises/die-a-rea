@@ -35,6 +35,7 @@ Every tracked document, what it owns, and its role.
 | `../docker/README.md` | Docker toolchain usage (runtime/dev images) | infra |
 | `docs/ADAPTERS.md` | Adapter discovery, reference adapters, CI lanes | design |
 | `docs/RUNTIME.md` | Embedding the runtime guard (JS + native) | design |
+| `docs/RELEASING.md` | Versioning, crates.io publish, binary releases, C ABI | infra |
 
 ## Authority map (fact → owner)
 

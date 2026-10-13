@@ -130,6 +130,13 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-038 — `direa-ffi` is an optional C ABI.** A `cdylib` (`libdirea_ffi`) plus
+`direa_ffi.h` expose `direa_version`, `direa_guard_detect` and
+`direa_strip_native`; internal deps carry `path` + `version` so crates publish in
+order (core → verify → cli → ffi). [Evidence: `crates/direa-ffi/` (tests);
+`docs/RELEASING.md`] -> Keep the ABI small and stable; the CLI is the full
+interface. (Open)
+
 **K-037 — `init` discovers shipped artifacts.** `direa_core::discover` reads
 `Cargo.toml` (target/release|debug/<name>), `package.json` (main/bin/dist/asar),
 and `pom.xml`/Gradle (`target/*.jar`, `build/libs/*.jar`), falling back to

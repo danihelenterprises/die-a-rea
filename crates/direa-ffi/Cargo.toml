@@ -1,0 +1,18 @@
+[package]
+name = "direa-ffi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "C ABI for die-a-rea: version, native guard detection, and in-place native stripping."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+direa-core = { path = "../direa-core", version = "0.1.0" }

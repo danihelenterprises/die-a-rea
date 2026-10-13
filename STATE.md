@@ -117,13 +117,13 @@ to bottom unless a dependency says otherwise.
 | Metric | Value |
 |---|---|
 | Rust crates | 3 |
-| Tests (`cargo test --all`) | 87 |
+| Tests (`cargo test --all`) | 90 |
 | Backlog items (`B-NNN`) | 37 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 37 |
+| Durable lessons (`K-NNN`) | 38 |
 | Decision records (`ADR-NNNN`) | 18 |
-| Markdown docs (tracked) | 38 |
-| Commits in history | 36 |
+| Markdown docs (tracked) | 39 |
+| Commits in history | 37 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -212,3 +212,5 @@ to bottom unless a dependency says otherwise.
   B-033..B-037. Closed `B-032`.
 - **B-033 (commit 35):** composite GitHub Action. Closed `B-033`.
 - **B-034 (commit 36):** artifact discovery in `init` (K-037). Closed `B-034`.
+- **B-035 (commit 37):** crates metadata, release workflow, `direa-ffi` (K-038).
+  Closed `B-035`.
