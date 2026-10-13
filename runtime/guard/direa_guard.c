@@ -6,6 +6,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <sys/sysctl.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
 static int add_finding(struct direa_guard_result *r, const char *msg) {
     if (r->finding_count >= DIREA_GUARD_MAX_FINDINGS) {
         return 0;
@@ -69,6 +77,29 @@ static void scan_maps(struct direa_guard_result *r) {
 }
 #endif
 
+/* Platform-specific debugger/tracer detection. */
+#if defined(_WIN32)
+static void scan_platform(struct direa_guard_result *r) {
+    if (IsDebuggerPresent()) {
+        add_finding(r, "IsDebuggerPresent");
+    }
+}
+#elif defined(__APPLE__)
+static void scan_platform(struct direa_guard_result *r) {
+    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()};
+    struct kinfo_proc info;
+    size_t size = sizeof(info);
+    memset(&info, 0, size);
+    if (sysctl(mib, 4, &info, &size, NULL, 0) == 0 && (info.kp_proc.p_flag & P_TRACED)) {
+        add_finding(r, "P_TRACED");
+    }
+}
+#else
+static void scan_platform(struct direa_guard_result *r) {
+    (void)r;
+}
+#endif
+
 static void scan_env(struct direa_guard_result *r) {
     static const char *keys[] = {
         "LD_PRELOAD", "DYLD_INSERT_LIBRARIES", "FRIDA", "NODE_OPTIONS"};
@@ -107,6 +138,7 @@ int direa_guard_check(struct direa_guard_result *out) {
     scan_status(out);
     scan_maps(out);
 #endif
+    scan_platform(out);
     scan_env(out);
     out->instrumented = out->finding_count > 0 ? 1 : 0;
     if (out->instrumented) {

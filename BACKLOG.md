@@ -35,7 +35,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-033 | GitHub Action for one-line integration | Medium | Tooling | Closed | Composite `action.yml` installing the CLI and running `args`. |
 | B-034 | Config auto-discovery and smarter `init` | Medium | Tooling | Closed | `direa_core::discover` used by `init` (K-037). |
 | B-035 | Publish crates + release binaries + optional C ABI | Medium | Tooling | Closed | crates.io metadata + dep versions, `release.yml`, `direa-ffi` cdylib (K-038). |
-| B-036 | Cross-platform guard detection (Windows/macOS) | Medium | Runtime | Open | `IsDebuggerPresent`, macOS `P_TRACED`. |
+| B-036 | Cross-platform guard detection (Windows/macOS) | Medium | Runtime | Closed | Rust + C guard use `IsDebuggerPresent`/`P_TRACED` (K-039). |
 | B-037 | SARIF and JUnit output for CI | Low | Tooling | Open | Machine-readable reports. |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Closed | `direa_core::canary` (gate/canary/decoy) wired into `build`; detector added under B-009 (K-025). |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Closed | `canary::gauntlet` + `die-a-rea canary-selftest` in CI (K-026). |
@@ -119,3 +119,4 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 - **B-034 (Closed, commit 36):** artifact discovery in `init` (K-037).
 - **B-035 (Closed, commit 37):** crates metadata + release workflow + `direa-ffi`
   (K-038).
+- **B-036 (Closed, commit 38):** cross-platform guard detection (K-039).

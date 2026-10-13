@@ -120,10 +120,10 @@ to bottom unless a dependency says otherwise.
 | Tests (`cargo test --all`) | 90 |
 | Backlog items (`B-NNN`) | 37 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 38 |
+| Durable lessons (`K-NNN`) | 39 |
 | Decision records (`ADR-NNNN`) | 18 |
 | Markdown docs (tracked) | 39 |
-| Commits in history | 37 |
+| Commits in history | 38 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -214,3 +214,4 @@ to bottom unless a dependency says otherwise.
 - **B-034 (commit 36):** artifact discovery in `init` (K-037). Closed `B-034`.
 - **B-035 (commit 37):** crates metadata, release workflow, `direa-ffi` (K-038).
   Closed `B-035`.
+- **B-036 (commit 38):** cross-platform guard detection (K-039). Closed `B-036`.

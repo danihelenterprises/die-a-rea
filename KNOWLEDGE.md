@@ -130,6 +130,13 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-039 — Guard detection is platform-specific.** Linux reads `TracerPid`/maps;
+Windows uses `IsDebuggerPresent`/`CheckRemoteDebuggerPresent`; macOS uses
+`sysctl(KERN_PROC_PID)` and `P_TRACED`. The C guard mirrors this with
+`#if defined(_WIN32)`/`__APPLE__`. [Evidence: `crates/direa-core/src/guard.rs`
+(`platform_findings`); `runtime/guard/direa_guard.c`] -> Keep `classify` as the
+portable, testable core; add platform probes behind cfg. (ADR-0014, ADR-0018)
+
 **K-038 — `direa-ffi` is an optional C ABI.** A `cdylib` (`libdirea_ffi`) plus
 `direa_ffi.h` expose `direa_version`, `direa_guard_detect` and
 `direa_strip_native`; internal deps carry `path` + `version` so crates publish in

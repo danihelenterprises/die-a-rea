@@ -39,10 +39,11 @@ int main(void) {
 cc -I runtime/guard your_app.c runtime/guard/direa_guard.c -o your_app
 ```
 
-`direa_guard_check` returns 1 when instrumentation is detected. Detection
-mirrors `direa_core::guard`: a non-zero `TracerPid` (Linux), process-map
-signatures (Frida/gum/gadget/LLDB), and injected-library environment variables
-(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `FRIDA`, `NODE_OPTIONS=--inspect`). The
+`direa_guard_check` returns 1 when instrumentation is detected. Detection is
+platform-specific: `TracerPid`/process maps on Linux, `IsDebuggerPresent` on
+Windows, `P_TRACED` on macOS, plus injected-library environment variables
+(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `FRIDA`, `NODE_OPTIONS=--inspect`) on all
+platforms. The
 library ships a weak no-op `direa_guard_on_instrumented`; define your own to
 react (report, degrade, exit — your choice; never destructive by default).
 
