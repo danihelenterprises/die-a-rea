@@ -183,7 +183,7 @@ Every stage attacks a different part of the automated pipeline:
 | 5 | **Tarpits** | Analysis-cost inflation for AI agents | padding, honeypots, authorization gate |
 | 6 | **Verification** | Score resistance against the original | RRS report |
 
-### Randomization — the 500-piece puzzle with 300 extra pieces
+### Randomization — the 500-piece jigsaw puzzle with 300 extra pieces
 
 Seeded decoys ([`docs/RANDOMIZATION.md`](docs/RANDOMIZATION.md)) inject plausible fake
 functions, strings, files and honeypots, plus deep nesting that is expensive to trace.
