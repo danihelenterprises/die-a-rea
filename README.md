@@ -43,12 +43,11 @@ die-a-rea verify    # score resistance against the original
 Software is the work of human hands. It is thousands of small, deliberate decisions
 made by people who chose to spend their years building something.
 
-When copying someone else's life's work becomes a single prompt — when a competitor can
-reconstruct your product in an afternoon with an agent and a decompiler — the incentive
-to build quietly dies. Not with a bang, but with a slow spreadsheet: why invest years
-when a faster team can lift the result? The people who lose first are the smallest
-teams; the craftspeople; everyone whose livelihood depends on the thing they make being
-*yours to make*.
+When copying someone else's life's work becomes a single prompt, and when a competitor can
+reconstruct your product in an afternoon with an agent and a decompiler, the incentive
+to build quietly dies. Why invest years when a faster team can lift the result? The 
+people who lose first are the smallest teams; the craftspeople; everyone whose livelihood 
+depends on the thing they make being *yours to make*.
 
 Technology is never neutral. It takes on the character of the people who wield it. This
 project is built on a simple conviction:
