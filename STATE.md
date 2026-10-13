@@ -118,12 +118,12 @@ to bottom unless a dependency says otherwise.
 |---|---|
 | Rust crates | 3 |
 | Tests (`cargo test --all`) | 93 |
-| Backlog items (`B-NNN`) | 39 |
+| Backlog items (`B-NNN`) | 40 |
 | Open backlog items (High) | 0 |
-| Durable lessons (`K-NNN`) | 42 |
+| Durable lessons (`K-NNN`) | 43 |
 | Decision records (`ADR-NNNN`) | 19 |
 | Markdown docs (tracked) | 40 |
-| Commits in history | 41 |
+| Commits in history | 42 |
 
 ## Appendix — history and do-not-redo ledger
 
@@ -220,3 +220,5 @@ to bottom unless a dependency says otherwise.
   (K-041). Closed `B-038`.
 - **B-039 (commit 41):** removed the unmeasured agent-deception axis (ADR-0019,
   K-042). Closed `B-039`.
+- **B-040 (commit 42):** bench corpus across JS/WASM/Java/ELF + README language
+  table (K-043). Closed `B-040`.

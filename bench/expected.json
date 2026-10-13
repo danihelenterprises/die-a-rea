@@ -1,3 +1,7 @@
 {
-  "js-secrets": 40
+  "js-secrets": 40,
+  "js-tree": 30,
+  "wasm-module": 45,
+  "java-class": 45,
+  "native-elf": 40
 }

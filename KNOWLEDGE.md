@@ -130,6 +130,15 @@ source. The guard rejects output equal to / inside the source, and a non-empty
 test `refuses_output_over_source`] -> Keep these refusals as errors; do not
 downgrade to warnings. (ADR-0012)
 
+**K-043 — The bench corpus covers every built-in format.** Cases: `js-secrets`
+(JS file), `js-tree` (JS directory), `wasm-module`, `java-class`, `native-elf`.
+Text fixtures are committed; binary ones are produced by `bench/generate.sh` and
+gitignored, and `bench` skips a case whose target is absent. [Evidence:
+`bench/`; `crates/direa-cli/src/main.rs` (`cmd_bench`); CI runs
+`bench/generate.sh && die-a-rea bench --check`] -> Add a fixture when a new
+built-in post ships; keep expected.json minimums just below observed RRS.
+(ADR-0004)
+
 **K-042 — Do not declare an RRS axis without a probe.** `AgentDeception` shipped
 as a weight-2.0 axis that nothing measured, implying a capability that did not
 exist; it was removed (ADR-0019). [Evidence: `crates/direa-core/src/rrs.rs`;

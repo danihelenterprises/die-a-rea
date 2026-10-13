@@ -75,6 +75,30 @@ than raise a tower alone.
 
 ---
 
+## Supported languages and formats
+
+`die-a-rea` detects the artifact kind automatically. **Built-in** hardening needs
+no extra toolchain; **adapters** add deeper protection and are bring-your-own
+(discovered via `DIREA_<ID>_ADAPTER` or `PATH` — see
+[docs/ADAPTERS.md](docs/ADAPTERS.md)). `verify` (the RRS) works on any artifact.
+
+| Language / ecosystem | Artifacts | Built-in (no toolchain) | Adapter (optional) |
+|---|---|---|---|
+| C / C++ / Rust / Swift | ELF, PE, Mach-O | symbol/debug/build-metadata strip | `direa-llvm` (Pluto / O-MVLL, compile-time) |
+| Go | ELF, PE, Mach-O | symbol/debug strip + Go build-info/ID scrub | `direa-go` (garble) |
+| JavaScript | `.js` / `.mjs` / `.cjs`, bundles | source-map + comment strip, notice/canary, decoys, runtime guard | `direa-js` (javascript-obfuscator) |
+| Electron | app directory, `.asar` | as JavaScript/tree | `direa-js` (+ asarmor / bytenode) |
+| .NET (C#/F#/VB) | PE assemblies (`.dll`/`.exe`) | COFF symbol table, debug dir, Rich header | `direa-clr` (ConfuserEx) |
+| Java / Kotlin / Scala | `.class` | debug-attribute strip (SourceFile, LineNumberTable, …) | `direa-jvm` (R8 / ProGuard) |
+| Android | `.apk` | detection + verification | `direa-jvm` (R8) |
+| WebAssembly | `.wasm` | custom-section strip (name, producers) | `direa-wasm` (wasm-opt / wasm-mutate) |
+| Any other | any file/dir | structural checks + RRS measurement | — (write one: [docs/ADAPTERS.md](docs/ADAPTERS.md)) |
+
+Other languages can call the tool two ways: the **CLI** (any build system), or the
+optional **C ABI** (`direa-ffi`, `direa_ffi.h`) for embedding `guard` detection and
+native stripping. A linkable **native guard** lives in `runtime/guard/`
+([docs/RUNTIME.md](docs/RUNTIME.md)).
+
 ## Quick start
 
 Requires Rust (stable).

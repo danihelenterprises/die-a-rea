@@ -39,6 +39,7 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
 | B-037 | SARIF and JUnit output for CI | Low | Tooling | Closed | `verify --format sarif|junit` (K-040). |
 | B-038 | End-to-end eval harness + benchmark corpus + RRS regression gate | High | RRS | Closed | `bench` corpus + `--check` in CI, `tests/e2e.rs` (K-041). |
 | B-039 | Remove or measure the unmeasured `agent-deception` RRS axis | Low | RRS | Closed | Axis removed; agent layer validated by the gauntlet (ADR-0019, K-042). |
+| B-040 | Grow the bench corpus to every built-in format | Medium | RRS | Closed | JS file/tree, WASM, Java, ELF fixtures + generator (K-043). |
 | B-008 | Implement the `direa-canary` adapter (detector-hardened agent payloads) | Medium | Agent | Closed | `direa_core::canary` (gate/canary/decoy) wired into `build`; detector added under B-009 (K-025). |
 | B-009 | Add the detector-hardening gauntlet (NPS-style prompt-injection detector vs our canaries) | Medium | Agent | Closed | `canary::gauntlet` + `die-a-rea canary-selftest` in CI (K-026). |
 | B-010 | Configure a git remote; repository history begins at the memory-install snapshot | High | Ops | Closed | `origin` = `git@github-die-a-rea:danihelenterprises/die-a-rea.git`; `main` pushed. |
@@ -127,3 +128,5 @@ registry in `crates/direa-core/src/planner.rs`, and the absence of a git remote
   gate (K-041).
 - **B-039 (Closed, commit 41):** removed the unmeasured agent-deception axis
   (ADR-0019, K-042).
+- **B-040 (Closed, commit 42):** bench corpus across formats (K-043); README
+  language-support table.

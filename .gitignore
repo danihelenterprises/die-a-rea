@@ -2,3 +2,8 @@
 **/*.rs.bk
 .direa-cache/
 direa-report.json
+
+# Generated bench fixtures (see bench/generate.sh).
+bench/wasm-module/mod.wasm
+bench/java-class/App.class
+bench/native-elf/app

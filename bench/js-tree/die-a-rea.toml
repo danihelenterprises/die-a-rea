@@ -1,0 +1,12 @@
+# Bench fixture: a JavaScript directory (bundle) target.
+[project]
+name = "js-tree"
+version = "1.0.0"
+[policy]
+profile = "high"
+[randomization]
+enabled = false
+[tarpit]
+enabled = false
+[[targets]]
+path = "bundle"

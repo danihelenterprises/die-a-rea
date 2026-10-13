@@ -380,6 +380,16 @@ fn cmd_bench(ui: &Ui, dir: &Path, check: bool, json: bool) -> Result<()> {
             .first()
             .map(|t| t.path.clone())
             .ok_or_else(|| anyhow::anyhow!("bench case '{name}' has no targets"))?;
+        if !src.exists() {
+            ui.info(
+                1,
+                format!(
+                    "bench:{name}: skipped (missing target {}; run bench/generate.sh)",
+                    src.display()
+                ),
+            );
+            continue;
+        }
         let out = std::env::temp_dir().join(format!("direa-bench-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&out);
 
