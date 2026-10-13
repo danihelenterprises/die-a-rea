@@ -125,7 +125,7 @@ counted here (one fact, one home).
 | Metric | Value |
 |---|---|
 | Rust crates | 4 |
-| Tests (`cargo test --all`) | 120 |
+| Tests (`cargo test --all`) | 124 |
 | Backlog items (`B-NNN`) | 59 |
 | Open backlog items (High) | 0 |
 | Durable lessons (`K-NNN`) | 57 |
@@ -294,3 +294,7 @@ counted here (one fact, one home).
   `wasm2wat`, `wat2wasm`) and common decompilers (`ghidra`, `analyzeHeadless`,
   `radare2`, `rizin`) alongside the adapter tools, so readiness covers the
   control-flow axis (`verify --decompiler`, ADR-0017). Closed `B-051`.
+- **B-049:** `discover` (used by `init`) now also finds Go (`go.mod` module
+  binary), .NET (`bin`/`publish` assemblies), Android (`build/outputs/apk/*.apk`)
+  and C/C++ (CMake/Make/meson `build/` linked binary, objects skipped), with
+  budget-bounded recursive scans and deduped results. Closed `B-049`.
