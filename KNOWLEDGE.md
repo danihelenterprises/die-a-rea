@@ -429,3 +429,12 @@ their toolchains only when present (skipped otherwise, and gated in
 `bench/generate.sh`, `bench/*/die-a-rea.toml`, `bench/expected.json`] -> Synthetic
 for parse-only formats, real + guarded for toolchain formats; gate only what you
 can observe. (B-050)
+
+**K-052 — The .NET SDK aborts without ICU in minimal containers.** Running
+`dotnet` (8.0) in a slim Debian/Ubuntu image without `libicu` fails immediately
+with "Couldn't find a valid ICU package installed on the system" (a hard
+`FailFast`, before any command runs). Install `libicu`/`icu-libs`, or set
+`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` to run without globalization. [Evidence:
+observing the bench Go/.NET fixtures in a throwaway `ubuntu:24.04` +
+`dotnet-install.sh` container (B-050)] -> When containerizing .NET tooling, install
+ICU or set the invariant flag. (B-050)
